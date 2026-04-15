@@ -102,6 +102,51 @@ tbody td{padding:7px 12px;white-space:nowrap;max-width:160px;overflow:hidden;tex
 .pb:hover{border-color:var(--teal);color:var(--teal);}
 .pb.on{background:var(--teal);color:#fff;border-color:var(--teal);}
 .pb:disabled{opacity:.4;cursor:not-allowed;}
+
+/* Schools Table */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;align-items:start;}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;}}
+.sec{background:var(--card);border-radius:10px;border:1.5px solid var(--border);overflow:hidden;display:flex;flex-direction:column;}
+.sec-h{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1.5px solid var(--border);flex-wrap:wrap;gap:8px;}
+.sec-h h3{font-size:13px;font-weight:600;color:var(--text);}
+.sec-h h3 span{font-size:11px;font-weight:400;color:var(--muted);margin-left:5px;}
+.sec-h small{font-size:11px;color:var(--muted);}
+.stbl{width:100%;border-collapse:collapse;font-size:12px;}
+.stbl thead{background:#e5f4f5;}
+.stbl thead th{padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--teal);
+  text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:2px solid var(--teal);cursor:pointer;user-select:none;}
+.stbl thead th:hover{background:#d4ecee;}
+.stbl thead th.asc::after{content:" ▲";font-size:9px;}
+.stbl thead th.desc::after{content:" ▼";font-size:9px;}
+.stbl tbody tr{border-bottom:1px solid #edf0f0;transition:background .15s;}
+.stbl tbody tr:hover{background:#f0fafb;}
+.stbl td{padding:7px 12px;}
+.stbl td.num{text-align:right;font-family:'DM Mono',monospace;font-weight:700;}
+.stbl td.c-num{color:var(--red);}
+.stbl td.i-num{color:var(--blue);}
+.stbl td.t-num{color:var(--teal);}
+.stbl-wrap{overflow-y:auto;flex:1;max-height:600px;}
+.sch-name{font-weight:500;}
+/* Trend Cards */
+.trend-wrap{padding:14px 18px;flex:1;overflow-y:auto;max-height:600px;}
+.trend-empty{color:var(--muted);font-size:13px;text-align:center;padding:24px;}
+.trend-card{border:1.5px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+.trend-card:last-child{margin-bottom:0;}
+.trend-card-h{display:flex;align-items:center;gap:12px;padding:11px 16px;background:#fef9f0;border-bottom:1.5px solid #fce8c3;cursor:pointer;}
+.trend-flag{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+.trend-flag.med{background:var(--yellow);color:var(--dkgrey);}
+.trend-school{font-weight:700;font-size:13px;color:var(--dkgrey);flex:1;}
+.trend-topic{font-size:12px;color:var(--muted);}
+.trend-count{font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--red);white-space:nowrap;}
+.trend-chevron{color:var(--muted);font-size:12px;transition:transform .2s;}
+.trend-card-h.open .trend-chevron{transform:rotate(90deg);}
+.trend-body{display:none;padding:0;}
+.trend-body.open{display:block;}
+.trend-note{padding:8px 16px;border-bottom:1px solid #f0f0f0;font-size:12px;color:var(--text);display:flex;gap:10px;}
+.trend-note:last-child{border-bottom:none;}
+.trend-note-dot{width:6px;height:6px;border-radius:50%;background:var(--teal);margin-top:5px;flex-shrink:0;}
+.trend-note-txt{flex:1;line-height:1.5;}
+.trend-note-meta{font-size:10.5px;color:var(--muted);margin-top:2px;}
 </style>
 </head>
 <body>
@@ -156,6 +201,43 @@ tbody td{padding:7px 12px;white-space:nowrap;max-width:160px;overflow:hidden;tex
     </div>
     <div id="sBd"><div class="se">Select a staff member above to see their breakdown.</div></div>
   </div>
+  <!-- SCHOOLS + TRENDS -->
+  <div class="two-col">
+
+    <!-- School Cases Table -->
+    <div class="sec">
+      <div class="sec-h">
+        <h3>Cases by School <span id="schCt"></span></h3>
+        <small>Click column header to sort</small>
+      </div>
+      <div class="stbl-wrap">
+        <table class="stbl" id="schTbl">
+          <thead>
+            <tr>
+              <th onclick="sortSch(0)" id="sH0">School</th>
+              <th onclick="sortSch(1)" id="sH1" style="text-align:right">Concerns</th>
+              <th onclick="sortSch(2)" id="sH2" style="text-align:right">Inquiries</th>
+              <th onclick="sortSch(3)" id="sH3" style="text-align:right">Total</th>
+            </tr>
+          </thead>
+          <tbody id="schBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Trends Panel -->
+    <div class="sec">
+      <div class="sec-h">
+        <h3>Trends <span id="trendCt"></span></h3>
+        <small>Same topic, same campus, 2+ different parents</small>
+      </div>
+      <div class="trend-wrap" id="trendWrap">
+        <div class="trend-empty">Loading...</div>
+      </div>
+    </div>
+
+  </div>
+
   <div class="tc">
     <div class="th">
       <h3>Case Log <span id="tCt"></span></h3>
@@ -311,7 +393,7 @@ function go() {
 
 
   curPage = 1;
-  kpis(); buildCharts(); renderStaff(); renderTable();
+  kpis(); buildCharts(); renderStaff(); buildSchoolTable(); buildTrends(); renderTable();
 }
 
 function reset() {
@@ -471,6 +553,134 @@ function renderTable(){
   document.getElementById("pB").innerHTML=b;
 }
 function pg(n){curPage=n;renderTable();}
+
+
+// ── School Cases Table ─────────────────────────────────────────
+var schSort = {col:3, dir:-1}; // default: sort by Total desc
+var schData = [];
+
+function buildSchoolTable() {
+  var map = {};
+  filtered.forEach(function(r) {
+    var school = get(r, CI.SCHOOL);
+    if (!school) return;
+    if (!map[school]) map[school] = {name:school, concerns:0, inquiries:0, total:0};
+    var ic = get(r, CI.IC).toLowerCase();
+    if (ic.indexOf("concern") >= 0) map[school].concerns++;
+    else if (ic.indexOf("inquiry") >= 0) map[school].inquiries++;
+    map[school].total++;
+  });
+  schData = Object.values(map);
+  sortAndRenderSch();
+}
+
+function sortSch(col) {
+  if (schSort.col === col) { schSort.dir *= -1; }
+  else { schSort.col = col; schSort.dir = -1; }
+  sortAndRenderSch();
+}
+
+function sortAndRenderSch() {
+  var col = schSort.col, dir = schSort.dir;
+  var sorted = schData.slice().sort(function(a,b) {
+    var keys = ["name","concerns","inquiries","total"];
+    var av = a[keys[col]], bv = b[keys[col]];
+    if (typeof av === "string") return dir * av.localeCompare(bv);
+    return dir * (bv - av);
+  });
+
+  // Update header arrows
+  for (var i=0;i<4;i++) {
+    var h = document.getElementById("sH"+i);
+    if (h) { h.className = col===i ? (dir===-1?"desc":"asc") : ""; }
+  }
+
+  document.getElementById("schCt").textContent = "("+sorted.length+" schools)";
+  var body = document.getElementById("schBody");
+  if (!sorted.length) {
+    body.innerHTML = "<tr><td colspan='4' style='text-align:center;padding:20px;color:var(--muted)'>No data</td></tr>";
+    return;
+  }
+  body.innerHTML = sorted.map(function(s) {
+    return "<tr>"
+      + "<td class='sch-name'>"+s.name+"</td>"
+      + "<td class='num c-num'>"+s.concerns+"</td>"
+      + "<td class='num i-num'>"+s.inquiries+"</td>"
+      + "<td class='num t-num'>"+s.total+"</td>"
+      + "</tr>";
+  }).join("");
+}
+
+// ── Trends Panel ───────────────────────────────────────────────
+function buildTrends() {
+  // Group by School + Topic
+  var map = {};
+  filtered.forEach(function(r) {
+    var school = get(r, CI.SCHOOL);
+    var topic  = get(r, CI.TOPIC);
+    var name   = get(r, CI.NAME);
+    var notes  = get(r, CI.NOTES);
+    var date   = get(r, CI.DATE);
+    var staff  = get(r, CI.STAFF);
+    if (!school || !topic) return;
+    var key = school + "|||" + topic;
+    if (!map[key]) map[key] = {school:school, topic:topic, names:{}, entries:[]};
+    // Track unique parent names
+    if (name) map[key].names[name] = 1;
+    map[key].entries.push({notes:notes, date:date, staff:staff, name:name});
+  });
+
+  // Filter: must have 2+ DIFFERENT parent names
+  var trends = Object.values(map).filter(function(t) {
+    return Object.keys(t.names).length >= 2;
+  });
+
+  // Sort by unique parent count desc
+  trends.sort(function(a,b) {
+    return Object.keys(b.names).length - Object.keys(a.names).length;
+  });
+
+  var wrap = document.getElementById("trendWrap");
+  document.getElementById("trendCt").textContent = trends.length ? "("+trends.length+" trends)" : "";
+
+  if (!trends.length) {
+    wrap.innerHTML = "<div class='trend-empty'>No trends detected in current filter range.<br><small>A trend requires the same topic from 2+ different parents at the same school.</small></div>";
+    return;
+  }
+
+  wrap.innerHTML = trends.map(function(t, idx) {
+    var uniq = Object.keys(t.names).length;
+    var flagCls = uniq >= 4 ? "trend-flag" : "trend-flag med";
+    var flagTxt = uniq >= 4 ? "HIGH (" + uniq + ")" : "TREND (" + uniq + ")";
+    var notes = t.entries.map(function(e) {
+      var txt = e.notes || "(no notes recorded)";
+      var meta = [e.date, e.name, e.staff].filter(Boolean).join(" · ");
+      return "<div class='trend-note'>"
+        + "<div class='trend-note-dot'></div>"
+        + "<div><div class='trend-note-txt'>"+txt+"</div>"
+        + "<div class='trend-note-meta'>"+meta+"</div></div>"
+        + "</div>";
+    }).join("");
+
+    return "<div class='trend-card'>"
+      + "<div class='trend-card-h' onclick='toggleTrend(this)' id='th"+idx+"'>"
+      + "<span class='"+flagCls+"'>"+flagTxt+"</span>"
+      + "<span class='trend-school'>"+t.school+"</span>"
+      + "<span class='trend-topic'>"+t.topic+"</span>"
+      + "<span class='trend-count'>"+t.entries.length+" cases</span>"
+      + "<span class='trend-chevron'>&#9654;</span>"
+      + "</div>"
+      + "<div class='trend-body' id='tb"+idx+"'>"+notes+"</div>"
+      + "</div>";
+  }).join("");
+}
+
+function toggleTrend(hdr) {
+  hdr.classList.toggle("open");
+  var bodyId = hdr.id.replace("th","tb");
+  var body = document.getElementById(bodyId);
+  if (body) body.classList.toggle("open");
+}
 
 // Auto-refresh countdown
 setInterval(function(){
