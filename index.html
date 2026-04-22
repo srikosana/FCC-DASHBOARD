@@ -147,6 +147,23 @@ tbody td{padding:7px 12px;white-space:nowrap;max-width:160px;overflow:hidden;tex
 .trend-note-dot{width:6px;height:6px;border-radius:50%;background:var(--teal);margin-top:5px;flex-shrink:0;}
 .trend-note-txt{flex:1;line-height:1.5;}
 .trend-note-meta{font-size:10.5px;color:var(--muted);margin-top:2px;}
+
+/* Expandable Topic Table */
+.tt td{padding:6px 10px;white-space:normal;word-break:break-word;}
+.tt-row{cursor:pointer;}
+.tt-row:hover td{background:#f0fafb;}
+.tt-exp{display:none;background:#f8fcfc;}
+.tt-exp.open{display:table-row;}
+.tt-exp td{padding:0 !important;}
+.tt-exp-inner{padding:10px 14px;border-top:1px dashed var(--border);}
+.tt-note-item{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:12px;}
+.tt-note-item:last-child{border-bottom:none;}
+.tt-note-dot{width:6px;height:6px;border-radius:50%;background:var(--teal);margin-top:5px;flex-shrink:0;}
+.tt-note-txt{flex:1;line-height:1.5;color:var(--text);}
+.tt-note-meta{font-size:10.5px;color:var(--muted);margin-top:2px;}
+.tt-chevron{font-size:10px;color:var(--muted);transition:transform .2s;display:inline-block;margin-left:6px;}
+.tt-row.open .tt-chevron{transform:rotate(90deg);}
+.tt-empty-note{color:var(--muted);font-style:italic;font-size:12px;padding:8px 0;}
 </style>
 </head>
 <body>
@@ -471,13 +488,57 @@ function buildCharts() {
               y:{beginAtZero:true,grid:{color:"#edf0f0"},ticks:{font:{family:"DM Sans",size:10},precision:0}}}}
   });
 
-  // Topic table
-  var tc = countBy(filtered, CI.TOPIC);
-  var maxT = tc.length ? tc[0][1] : 1;
+  // Topic table — expandable rows
+  var topicMap = {};
+  filtered.forEach(function(r){
+    var tp = get(r, CI.TOPIC);
+    if (!tp) return;
+    if (!topicMap[tp]) topicMap[tp] = [];
+    topicMap[tp].push(r);
+  });
+  var tc = Object.entries(topicMap).sort(function(a,b){return b[1].length - a[1].length;});
+  var maxT = tc.length ? tc[0][1].length : 1;
   var tbody = document.getElementById("tBd");
-  tbody.innerHTML = tc.length ? tc.map(function(e){
-    return "<tr><td>"+e[0]+"</td><td class='n'>"+e[1]+"</td><td><div class='mb' style='width:"+Math.round(e[1]/maxT*80)+"px'></div></td></tr>";
-  }).join("") : "<tr><td colspan='3' style='padding:14px;color:var(--muted);text-align:center'>No data</td></tr>";
+  if (!tc.length) {
+    tbody.innerHTML = "<tr><td colspan='3' style='padding:14px;color:var(--muted);text-align:center'>No data</td></tr>";
+    return;
+  }
+  tbody.innerHTML = tc.map(function(e, idx){
+    var topic = e[0], rows2 = e[1], cnt = rows2.length;
+    var pct = Math.round(cnt/maxT*80);
+    // Build note rows inside expansion
+    var noteRows = rows2.map(function(r){
+      var raw = get(r, CI.NOTES);
+      var cleaned = cleanNote(raw);
+      var date  = get(r, CI.DATE);
+      var name  = get(r, CI.NAME);
+      var staff = get(r, CI.STAFF);
+      var school= get(r, CI.SCHOOL);
+      var meta  = [date, school, name, staff].filter(Boolean).join(" · ");
+      var txt   = cleaned || "<span class='tt-empty-note'>No notes recorded</span>";
+      return "<div class='tt-note-item'>"
+        + "<div class='tt-note-dot'></div>"
+        + "<div><div class='tt-note-txt'>"+txt+"</div>"
+        + (meta ? "<div class='tt-note-meta'>"+meta+"</div>" : "")
+        + "</div></div>";
+    }).join("");
+
+    return "<tr class='tt-row' onclick='toggleTopic("+idx+")' id='ttr"+idx+"'>"
+      + "<td>"+topic+"<span class='tt-chevron'>&#9654;</span></td>"
+      + "<td class='n'>"+cnt+"</td>"
+      + "<td><div class='mb' style='width:"+pct+"px'></div></td>"
+      + "</tr>"
+      + "<tr class='tt-exp' id='tte"+idx+"'>"
+      + "<td colspan='3'><div class='tt-exp-inner'>"+noteRows+"</div></td>"
+      + "</tr>";
+  }).join("");
+}
+
+function toggleTopic(idx) {
+  var row = document.getElementById("ttr"+idx);
+  var exp = document.getElementById("tte"+idx);
+  if (row) row.classList.toggle("open");
+  if (exp) exp.classList.toggle("open");
 }
 
 function renderStaff() {
@@ -554,6 +615,45 @@ function renderTable(){
 }
 function pg(n){curPage=n;renderTable();}
 
+
+
+// ── Smart Note Cleaner ─────────────────────────────────────────────────
+function cleanNote(raw) {
+  if (!raw) return "";
+  var s = raw.trim();
+  if (!s) return "";
+
+  // Step 1: Title-case if ALL CAPS
+  var upper = s.replace(/[^A-Za-z]/g,"");
+  var isAllCaps = upper.length > 3 && upper === upper.toUpperCase();
+  if (isAllCaps) {
+    s = s.toLowerCase().replace(/(?:^|[\s,\/\-])([a-z])/g, function(m,l){return m.replace(l,l.toUpperCase());});
+  }
+
+  // Step 2: Strip internal operational phrases
+  var strips = [
+    "front lobby,","front lobby","emails sign in","sign in visitors","sign in visitor",
+    "team huddle","prep for power","awaiting response","awaiting responce",
+    "awaiting reply","no answer","left voicemail","left vm","vm left",
+    "phone has busy signal","busy signal","follow up needed","follow-up needed",
+    "follow up","follow-up","in progress","resolved","closed"
+  ];
+  strips.forEach(function(ph){
+    var re = new RegExp(ph.replace(/[-\/\^$*+?.()|[\]{}]/g,'\$&'), 'gi');
+    s = s.replace(re, "");
+  });
+
+  // Step 3: Clean up leftover punctuation and extra spaces
+  s = s.replace(/^[,;\s\-]+|[,;\s\-]+$/g,"").replace(/\s{2,}/g," ").trim();
+
+  // Step 4: Ensure first letter is capital
+  if (s.length > 0) s = s.charAt(0).toUpperCase() + s.slice(1);
+
+  // Step 5: Ensure ends with period
+  if (s.length > 0 && ".!?".indexOf(s.charAt(s.length-1)) < 0) s += ".";
+
+  return s || raw.trim();
+}
 
 // ── School Cases Table ─────────────────────────────────────────
 var schSort = {col:3, dir:-1}; // default: sort by Total desc
@@ -653,7 +753,8 @@ function buildTrends() {
     var flagCls = uniq >= 4 ? "trend-flag" : "trend-flag med";
     var flagTxt = uniq >= 4 ? "HIGH (" + uniq + ")" : "TREND (" + uniq + ")";
     var notes = t.entries.map(function(e) {
-      var txt = e.notes || "(no notes recorded)";
+      var cleaned = cleanNote(e.notes);
+      var txt = cleaned || "<em style='color:var(--muted)'>No notes recorded</em>";
       var meta = [e.date, e.name, e.staff].filter(Boolean).join(" · ");
       return "<div class='trend-note'>"
         + "<div class='trend-note-dot'></div>"
