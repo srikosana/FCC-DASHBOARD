@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Cases — FCC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Radio+Canada:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --teal:#00a3af; --teal-dark:#007a83;
+    --dark-green:#006f5b; --light-green:#6db83d;
+    --dark-grey:#24383c; --red:#d96364; --yellow:#f9d04e;
+    --blue:#4975bd; --purple:#484f99;
+    --bg:#f4f6f6; --card:#ffffff; --border:#dfe6e6; --muted:#6b7c7f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Radio Canada',system-ui,sans-serif; background:var(--bg); color:var(--dark-grey);}
+  header{
+    background:linear-gradient(120deg,var(--teal),var(--dark-green));
+    color:#fff; padding:20px 20px 24px; position:sticky; top:0; z-index:10;
+  }
+  .hdr-wrap{max-width:720px; margin:0 auto;}
+  header h1{margin:0; font-size:1.3rem; font-weight:800;}
+  .nav-links{margin-top:2px;}
+  .nav-links a{color:#fff; opacity:.85; font-size:.78rem; text-decoration:none; margin-right:12px;}
+  .nav-links a:hover{opacity:1; text-decoration:underline;}
+  .who-row{display:flex; gap:8px; margin-top:14px; align-items:center; flex-wrap:wrap;}
+  .who-row input[type=text]{
+    font-family:inherit; font-size:.95rem; padding:9px 12px; border-radius:8px; border:none;
+    width:120px; background:rgba(255,255,255,.92); color:var(--dark-grey);
+  }
+  .who-row label.chk{display:flex; align-items:center; gap:6px; font-size:.8rem; color:#fff; opacity:.9;}
+  .who-row button{
+    font-family:inherit; border-radius:8px; border:1px solid rgba(255,255,255,.5);
+    background:rgba(255,255,255,.15); color:#fff; padding:9px 14px; font-size:.85rem; font-weight:600; cursor:pointer;
+  }
+
+  main{max-width:720px; margin:0 auto; padding:18px 16px 60px;}
+  .status-line{font-size:.85rem; color:var(--muted); margin-bottom:14px;}
+  .status-line.err{color:var(--red); font-weight:600;}
+  .empty-state{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:30px 20px; text-align:center; color:var(--muted);}
+
+  .case-card{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px 18px; margin-bottom:14px;}
+  .case-card.status-Open{border-left:4px solid var(--red);}
+  .case-card.status-Pending-Follow-Up{border-left:4px solid var(--yellow);}
+  .case-card.status-Closed{border-left:4px solid var(--light-green); opacity:.8;}
+
+  .cc-top{display:flex; justify-content:space-between; gap:8px; align-items:flex-start;}
+  .cc-title{font-weight:700; font-size:1rem;}
+  .cc-title .cat{font-weight:500; color:#4d5f63;}
+  .cc-tag{font-size:.68rem; font-weight:700; text-transform:uppercase; padding:3px 9px; border-radius:20px; white-space:nowrap;}
+  .cc-tag.Open{background:#fbe9ea; color:var(--red);}
+  .cc-tag.Pending-Follow-Up{background:#fdf6dd; color:#8a6d00;}
+  .cc-tag.Closed{background:#e9f4e3; color:var(--dark-green);}
+
+  .cc-meta{font-size:.78rem; color:var(--muted); margin-top:4px;}
+  .cc-issue{font-size:.9rem; margin-top:10px; color:#33454a;}
+  .cc-notes{font-size:.82rem; margin-top:8px; color:#4d5f63; background:#f7f9f9; border-radius:8px; padding:8px 10px; white-space:pre-line;}
+  .cc-flags{margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;}
+  .flag{font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:20px;}
+  .flag.esc{background:#fdf2f2; color:var(--red);}
+  .flag.urgent{background:#fdf2f2; color:var(--red);}
+  .flag.fp{background:#eef2f2; color:var(--muted);}
+
+  .cc-actions{display:flex; gap:8px; margin-top:12px;}
+  .cc-status-btn{
+    flex:1; border:2px solid var(--border); background:#fff; border-radius:8px;
+    padding:8px 4px; font-family:inherit; font-weight:600; font-size:.76rem; cursor:pointer; color:var(--dark-grey);
+  }
+  .cc-status-btn.current{cursor:default;}
+  .cc-status-btn[data-status="Open"].current{background:var(--red); border-color:var(--red); color:#fff;}
+  .cc-status-btn[data-status="Pending Follow-Up"].current{background:var(--yellow); border-color:var(--yellow); color:var(--dark-grey);}
+  .cc-status-btn[data-status="Closed"].current{background:var(--light-green); border-color:var(--light-green); color:#fff;}
+  .cc-status-btn:disabled{opacity:.5; cursor:wait;}
+
+  details.note-toggle{margin-top:10px;}
+  details.note-toggle summary{cursor:pointer; font-size:.8rem; font-weight:600; color:var(--teal-dark);}
+  .note-form{display:flex; gap:8px; margin-top:8px;}
+  .note-form textarea{
+    flex:1; font-family:inherit; font-size:.85rem; padding:8px 10px; border:1.5px solid var(--border);
+    border-radius:8px; min-height:44px; resize:vertical;
+  }
+  .note-form button{
+    background:var(--teal); color:#fff; border:none; border-radius:8px; padding:0 14px;
+    font-family:inherit; font-weight:700; font-size:.82rem; cursor:pointer;
+  }
+  .note-form button:disabled{opacity:.6; cursor:wait;}
+
+  .toast{
+    position:fixed; top:14px; left:50%; transform:translateX(-50%) translateY(-60px);
+    background:var(--dark-green); color:#fff; padding:10px 20px; border-radius:30px;
+    font-weight:600; font-size:.9rem; box-shadow:0 4px 14px rgba(0,0,0,.18);
+    transition:transform .25s ease; z-index:50;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-wrap">
+    <h1>My Cases</h1>
+    <div class="nav-links">
+      <a href="entry-form.html">+ Log new interaction</a>
+      <a href="dashboard.html">Daily report</a>
+    </div>
+    <div class="who-row">
+      <input type="text" id="staffInput" placeholder="Your initials" autocomplete="off">
+      <button id="loadBtn">Show my cases</button>
+      <label class="chk"><input type="checkbox" id="showClosed"> Include closed</label>
+    </div>
+  </div>
+</header>
+
+<div class="toast" id="toast">Updated &check;</div>
+
+<main>
+  <div class="status-line" id="statusLine">Enter your initials above to see your cases.</div>
+  <div id="caseList"></div>
+</main>
+
+<script>
+  // -- SETUP: same URLs as entry-form.html and dashboard.html --
+  const WEB_APP_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+  const CSV_URL = "PASTE_YOUR_PUBLISHED_LOG_CSV_URL_HERE";
+
+  let ALL_ROWS = [];
+
+  function escapeHtml(s){
+    return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // Pre-fill from ?staff=SK if the page was opened via a personal bookmark link
+  const params = new URLSearchParams(location.search);
+  if (params.get('staff')) {
+    document.getElementById('staffInput').value = params.get('staff');
+  }
+
+  function load(){
+    const statusLine = document.getElementById('statusLine');
+    if (CSV_URL.indexOf('PASTE_YOUR') === 0 || WEB_APP_URL.indexOf('PASTE_YOUR') === 0) {
+      statusLine.textContent = 'Setup needed: paste your Web App URL and CSV URL into my-cases.html.';
+      statusLine.classList.add('err');
+      return;
+    }
+    statusLine.textContent = 'Loading your cases...';
+    statusLine.classList.remove('err');
+
+    Papa.parse(CSV_URL + (CSV_URL.includes('?') ? '&' : '?') + 'cachebust=' + Date.now(), {
+      download: true,
+      complete: function(results){
+        const rows = results.data;
+        ALL_ROWS = [];
+        // Column order from Code.gs (0-indexed):
+        // 0 Timestamp,1 Date,2 Time,3 Staff,4 Campus,5 Area,6 Unit,7 Mode,
+        // 8 Category,9 Subcategory,10 Issue,11 Notes,12 Status,13 Priority,
+        // 14 Escalated,15 Footprints#,16 EdOfInstruction,17 EdOfSupport,
+        // 18 AreaCTM,19 InteractionType,20 CaseID,21 StatusUpdatedAt
+        for (let i=1; i<rows.length; i++){
+          const r = rows[i];
+          if (!r || r.length < 6 || !r[1]) continue;
+          ALL_ROWS.push({
+            timestamp:r[0]||'', date:r[1]||'', time:r[2]||'', staff:r[3]||'',
+            campus:r[4]||'', area:r[5]||'', unit:r[6]||'', mode:r[7]||'',
+            category:r[8]||'', subcategory:r[9]||'', issue:r[10]||'', notes:r[11]||'',
+            status:r[12]||'Open', priority:r[13]||'',
+            escalated:(r[14]||'').trim().toLowerCase()==='yes', footprints:r[15]||'',
+            edOfInstruction:r[16]||'', edOfSupport:r[17]||'', areaCTM:r[18]||'',
+            interactionType:r[19]||'', caseId:r[20]||'', statusUpdatedAt:r[21]||''
+          });
+        }
+        render();
+      },
+      error: function(err){
+        statusLine.textContent = 'Could not load cases: ' + err;
+        statusLine.classList.add('err');
+      }
+    });
+  }
+
+  function render(){
+    const staff = document.getElementById('staffInput').value.trim();
+    const showClosed = document.getElementById('showClosed').checked;
+    const statusLine = document.getElementById('statusLine');
+    const list = document.getElementById('caseList');
+
+    if (!staff) {
+      statusLine.textContent = 'Enter your initials above to see your cases.';
+      list.innerHTML = '';
+      return;
+    }
+
+    let mine = ALL_ROWS.filter(r => r.staff.trim().toLowerCase() === staff.toLowerCase());
+    if (!showClosed) mine = mine.filter(r => r.status !== 'Closed');
+
+    const order = {'Open':0, 'Pending Follow-Up':1, 'Closed':2};
+    mine.sort((a,b)=>{
+      const so = (order[a.status]??1) - (order[b.status]??1);
+      if (so !== 0) return so;
+      return a.timestamp < b.timestamp ? 1 : -1;
+    });
+
+    statusLine.textContent = mine.length + ' case' + (mine.length===1?'':'s') +
+      (showClosed ? '' : ' open or pending') + ' for "' + staff + '" \u00b7 updated ' + new Date().toLocaleTimeString();
+
+    if (!mine.length) {
+      list.innerHTML = `<div class="empty-state">Nothing here${showClosed ? '' : ' — try "Include closed" to see your full history'}.</div>`;
+      return;
+    }
+
+    list.innerHTML = mine.map(r=>{
+      const statusClass = r.status.replace(/ /g,'-');
+      const flags = [];
+      if (r.escalated) flags.push('<span class="flag esc">Escalated</span>');
+      if (r.priority === 'Urgent') flags.push('<span class="flag urgent">Urgent</span>');
+      if (r.footprints) flags.push('<span class="flag fp">FP ' + escapeHtml(r.footprints) + '</span>');
+
+      return `
+      <div class="case-card status-${statusClass}" data-case-id="${escapeHtml(r.caseId)}">
+        <div class="cc-top">
+          <div class="cc-title">${escapeHtml(r.campus)} <span class="cat">&mdash; ${escapeHtml(r.category)}</span></div>
+          <span class="cc-tag ${statusClass}">${escapeHtml(r.status)}</span>
+        </div>
+        <div class="cc-meta">${escapeHtml(r.date)} at ${escapeHtml(r.time)} &middot; ${escapeHtml(r.area)}${r.unit ? ' / '+escapeHtml(r.unit) : ''} &middot; ${escapeHtml(r.mode)}${r.interactionType ? ' &middot; '+escapeHtml(r.interactionType) : ''}${r.subcategory ? ' &middot; '+escapeHtml(r.subcategory) : ''}</div>
+        <div class="cc-issue">${escapeHtml(r.issue)}</div>
+        ${r.notes ? `<div class="cc-notes">${escapeHtml(r.notes)}</div>` : ''}
+        ${flags.length ? `<div class="cc-flags">${flags.join('')}</div>` : ''}
+        <div class="cc-actions">
+          <button class="cc-status-btn ${r.status==='Open'?'current':''}" data-status="Open" ${r.caseId ? '' : 'disabled title="No case ID on this row — can\'t update it"'}>Open</button>
+          <button class="cc-status-btn ${r.status==='Pending Follow-Up'?'current':''}" data-status="Pending Follow-Up" ${r.caseId ? '' : 'disabled'}>Pending</button>
+          <button class="cc-status-btn ${r.status==='Closed'?'current':''}" data-status="Closed" ${r.caseId ? '' : 'disabled'}>Closed</button>
+        </div>
+        <details class="note-toggle">
+          <summary>+ Add a follow-up note</summary>
+          <div class="note-form">
+            <textarea placeholder="e.g. Left voicemail for campus admin, awaiting callback"></textarea>
+            <button class="save-note-btn">Save</button>
+          </div>
+        </details>
+      </div>`;
+    }).join('');
+
+    // Status button handlers
+    list.querySelectorAll('.cc-status-btn').forEach(btn=>{
+      if (btn.disabled) return;
+      btn.addEventListener('click', ()=>{
+        const card = btn.closest('.case-card');
+        const caseId = card.dataset.caseId;
+        const newStatus = btn.dataset.status;
+        if (btn.classList.contains('current')) return;
+        submitUpdate(caseId, {status:newStatus}, card, ()=>{
+          const rowObj = ALL_ROWS.find(r=>r.caseId===caseId);
+          if (rowObj) rowObj.status = newStatus;
+          render();
+        });
+      });
+    });
+
+    // Note save handlers
+    list.querySelectorAll('.save-note-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const card = btn.closest('.case-card');
+        const caseId = card.dataset.caseId;
+        const textarea = card.querySelector('.note-form textarea');
+        const note = textarea.value.trim();
+        if (!note) return;
+        submitUpdate(caseId, {note:note}, card, ()=>{
+          const rowObj = ALL_ROWS.find(r=>r.caseId===caseId);
+          if (rowObj) {
+            const stamp = new Date().toLocaleString(undefined,{month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'});
+            rowObj.notes = (rowObj.notes ? rowObj.notes + '\n' : '') + '[' + stamp + '] ' + note;
+          }
+          render();
+        });
+      });
+    });
+  }
+
+  // Submits a case update via a hidden iframe form POST (same no-CORS
+  // pattern as entry-form.html), then runs onDone() once it completes.
+  let updateCounter = 0;
+  function submitUpdate(caseId, fields, card, onDone){
+    updateCounter++;
+    const iframeName = 'update_iframe_' + updateCounter;
+    const iframe = document.createElement('iframe');
+    iframe.name = iframeName;
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = WEB_APP_URL;
+    form.target = iframeName;
+
+    const allFields = Object.assign({action:'updateCase', caseId:caseId}, fields);
+    Object.keys(allFields).forEach(key=>{
+      const input = document.createElement('input');
+      input.type = 'hidden'; input.name = key; input.value = allFields[key];
+      form.appendChild(input);
+    });
+
+    card.style.opacity = '.6';
+    document.body.appendChild(form);
+
+    iframe.addEventListener('load', ()=>{
+      card.style.opacity = '';
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), 1300);
+      onDone();
+      setTimeout(()=>{ form.remove(); iframe.remove(); }, 500);
+    });
+
+    form.submit();
+  }
+
+  document.getElementById('loadBtn').addEventListener('click', load);
+  document.getElementById('staffInput').addEventListener('keydown', (e)=>{ if (e.key==='Enter') load(); });
+  document.getElementById('showClosed').addEventListener('change', render);
+
+  if (document.getElementById('staffInput').value) {
+    load();
+  }
+</script>
+</body>
+</html>
