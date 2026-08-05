@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FCC Daily Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Radio+Canada:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --teal:#00a3af; --teal-dark:#007a83;
+    --dark-green:#006f5b; --light-green:#6db83d;
+    --dark-grey:#24383c; --red:#d96364; --yellow:#f9d04e;
+    --blue:#4975bd; --purple:#484f99;
+    --bg:#f4f6f6; --card:#ffffff; --border:#dfe6e6; --muted:#6b7c7f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Radio Canada',system-ui,sans-serif; background:var(--bg); color:var(--dark-grey);}
+  header{
+    background:linear-gradient(120deg,var(--teal),var(--dark-green));
+    color:#fff; padding:22px 24px;
+  }
+  .hdr-wrap{max-width:1180px; margin:0 auto; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px;}
+  header h1{margin:0; font-size:1.5rem; font-weight:800; letter-spacing:.2px;}
+  header .sub{font-size:.85rem; opacity:.9; margin-top:4px;}
+  .controls{display:flex; gap:8px; align-items:center;}
+  .controls button, .controls input[type=date]{
+    font-family:inherit; border-radius:8px; border:1px solid rgba(255,255,255,.5);
+    background:rgba(255,255,255,.15); color:#fff; padding:8px 14px; font-size:.85rem; font-weight:600; cursor:pointer;
+  }
+  .controls input[type=date]{cursor:default; color-scheme:dark;}
+  .controls button:hover{background:rgba(255,255,255,.28);}
+
+  main{max-width:1180px; margin:0 auto; padding:22px 20px 60px;}
+  .status-line{font-size:.85rem; color:var(--muted); margin-bottom:18px;}
+  .status-line.err{color:var(--red); font-weight:600;}
+
+  .kpi-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:22px;}
+  @media(max-width:900px){ .kpi-grid{grid-template-columns:repeat(2,1fr);} }
+  .kpi{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center;}
+  .kpi .n{font-size:1.9rem; font-weight:800; line-height:1;}
+  .kpi .l{font-size:.72rem; text-transform:uppercase; letter-spacing:.4px; color:var(--muted); margin-top:6px; font-weight:600;}
+  .kpi.total{background:var(--dark-grey); color:#fff;}
+  .kpi.total .l{color:#c7d3d3;}
+  .kpi[data-mode="Phone Call"] .n{color:var(--blue);}
+  .kpi[data-mode="Email"] .n{color:var(--purple);}
+  .kpi[data-mode="Voicemail"] .n{color:var(--dark-green);}
+  .kpi[data-mode="In-Person"] .n{color:var(--teal);}
+  .kpi[data-mode="Online Form"] .n{color:var(--light-green);}
+
+  .grid2{display:grid; grid-template-columns:1.2fr 1fr; gap:16px; margin-bottom:16px;}
+  @media(max-width:860px){ .grid2{grid-template-columns:1fr;} }
+  .grid3{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;}
+  @media(max-width:860px){ .grid3{grid-template-columns:1fr;} }
+
+  .card{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:16px;}
+  .card h2{margin:0 0 14px; font-size:1rem; font-weight:700; display:flex; align-items:center; gap:8px;}
+  .card h2 .badge{background:var(--teal); color:#fff; border-radius:20px; padding:2px 10px; font-size:.72rem; font-weight:700;}
+
+  table{width:100%; border-collapse:collapse; font-size:.87rem;}
+  th{text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.3px; color:var(--muted); padding:6px 8px; border-bottom:2px solid var(--border);}
+  td{padding:8px; border-bottom:1px solid var(--border); vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .bar-cell{display:flex; align-items:center; gap:8px;}
+  .bar-bg{flex:1; height:8px; background:#eef2f2; border-radius:4px; overflow:hidden;}
+  .bar-fill{height:100%; background:var(--teal); border-radius:4px;}
+  .bar-fill.alt{background:var(--purple);}
+  .count{font-weight:700; min-width:26px; text-align:right;}
+
+  .status-pills{display:flex; gap:10px; flex-wrap:wrap;}
+  .pill{flex:1; min-width:100px; border-radius:10px; padding:12px; text-align:center;}
+  .pill .n{font-size:1.4rem; font-weight:800;}
+  .pill .l{font-size:.7rem; text-transform:uppercase; font-weight:700; margin-top:2px;}
+  .pill.open{background:#fbe9ea; color:var(--red);}
+  .pill.pending{background:#fdf6dd; color:#8a6d00;}
+  .pill.closed{background:#e9f4e3; color:var(--dark-green);}
+
+  .esc-item{border-left:4px solid var(--red); background:#fdf2f2; border-radius:0 8px 8px 0; padding:10px 12px; margin-bottom:8px;}
+  .esc-item .top{font-weight:700; font-size:.87rem; display:flex; justify-content:space-between; gap:8px;}
+  .esc-item .meta{font-size:.75rem; color:var(--muted); margin-top:2px;}
+  .esc-item .note{font-size:.83rem; margin-top:6px; color:#3d4d50;}
+  .empty{color:var(--muted); font-size:.85rem; padding:8px 0;}
+
+  .trend-item{padding:8px 0; border-bottom:1px solid var(--border);}
+  .trend-item:last-child{border-bottom:none;}
+  .trend-item .top{font-weight:700; font-size:.87rem;}
+  .trend-item .n{color:var(--dark-green); font-weight:700;}
+  .trend-item .note{font-size:.8rem; color:var(--muted); margin-top:2px;}
+
+  .log-table{max-height:440px; overflow:auto; border:1px solid var(--border); border-radius:10px;}
+  .log-table table{font-size:.78rem;}
+  .log-table th{position:sticky; top:0; background:#fafcfc; z-index:1;}
+  .tag{display:inline-block; padding:2px 8px; border-radius:20px; font-size:.7rem; font-weight:700; white-space:nowrap;}
+  .tag.Open{background:#fbe9ea; color:var(--red);}
+  .tag[data-s="Pending Follow-Up"]{background:#fdf6dd; color:#8a6d00;}
+  .tag.Closed{background:#e9f4e3; color:var(--dark-green);}
+  .subtle{color:var(--muted); font-size:.75rem;}
+
+  footer{text-align:center; color:var(--muted); font-size:.75rem; padding:20px 0 40px;}
+
+  @media print{
+    header{background:var(--teal) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .controls{display:none;}
+    .card, .kpi{break-inside:avoid;}
+    .log-table{max-height:none; overflow:visible;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-wrap">
+    <div>
+      <h1>FCC Daily Interaction Report</h1>
+      <div class="sub" id="dateLabel">Loading...</div>
+    </div>
+    <div class="controls">
+      <input type="date" id="dateFilter">
+      <button id="refreshBtn">&#8635; Refresh</button>
+      <button onclick="window.print()">&#128424; Print / Save PDF</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="status-line" id="statusLine">Loading log data...</div>
+
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="grid3">
+    <div class="card">
+      <h2>Topics / Categories of Support <span class="badge" id="catBadge">today</span></h2>
+      <table id="catTable"><thead><tr><th>Category</th><th style="width:45%">Volume</th><th>Count</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="card">
+      <h2>Interactions by Area <span class="badge" id="areaBadge">26-27 assignments</span></h2>
+      <table id="areaTable"><thead><tr><th>Area</th><th style="width:45%">Volume</th><th>Count</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Resolution Status of Cases</h2>
+      <div class="status-pills" id="statusPills"></div>
+      <h2 style="margin-top:18px;">Trends to Watch <span class="badge" id="trendBadge">repeat campus + category</span></h2>
+      <div id="trendList"></div>
+    </div>
+    <div class="card">
+      <h2>Escalations / Critical Issues <span class="badge" id="escBadge">0</span></h2>
+      <div id="escList"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Full Log <span class="badge" id="logBadge">today</span></h2>
+    <div class="log-table">
+      <table>
+        <thead><tr><th>Time</th><th>Campus</th><th>Area / Unit</th><th>Mode</th><th>Category</th><th>Subcategory</th><th>Issue</th><th>Notes</th><th>Status</th></tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>FCC Daily Interaction Report &mdash; generated automatically from the live entry log.</footer>
+</main>
+
+<script>
+  // -- SETUP: paste your published-to-web CSV URL for the "Log" tab here --
+  // Google Sheet -> File -> Share -> Publish to web -> select "Log" sheet -> CSV
+  const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRwsNA9L56N92el7GZ3JkUlTXnitggVcqYAHdjzo6yj5gi7i0bJWGwRBusggAlydqueLDWOdtwq7jf7/pub?gid=821583311&single=true&output=csv";
+
+  const MODES = ["Phone Call","Email","Voicemail","In-Person","Online Form"];
+  const MODE_LABEL = {"Phone Call":"Phone Calls","Email":"Emails","Voicemail":"Voicemails","In-Person":"In-Person","Online Form":"Online Forms"};
+
+  let ALL_ROWS = []; // array of row objects
+
+  function todayStr(){
+    const d = new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+
+  function fmtDateLabel(dstr){
+    const [y,m,d] = dstr.split('-').map(Number);
+    const dt = new Date(y, m-1, d);
+    return dt.toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric', year:'numeric'});
+  }
+
+  function escapeHtml(s){
+    return (s||'').replace(/[&<>"\']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function load(){
+    document.getElementById('statusLine').textContent = 'Loading log data...';
+    document.getElementById('statusLine').classList.remove('err');
+
+    if (CSV_URL.indexOf('PASTE_YOUR') === 0) {
+      document.getElementById('statusLine').textContent = 'Setup needed: paste your published Log-tab CSV URL into dashboard.html.';
+      document.getElementById('statusLine').classList.add('err');
+      return;
+    }
+
+    Papa.parse(CSV_URL + (CSV_URL.includes('?') ? '&' : '?') + 'cachebust=' + Date.now(), {
+      download: true,
+      complete: function(results){
+        const rows = results.data;
+        ALL_ROWS = [];
+        // Column order from Code.gs:
+        // 0 Timestamp,1 Date,2 Time,3 Staff,4 Campus,5 Area,6 Unit,7 Mode,
+        // 8 Category,9 Subcategory,10 Issue,11 Notes,12 Status,13 Priority,
+        // 14 Escalated,15 Footprints#,16 EdOfInstruction,17 EdOfSupport,18 AreaCTM
+        for (let i=1; i<rows.length; i++){
+          const r = rows[i];
+          if (!r || r.length < 6 || !r[1]) continue;
+          ALL_ROWS.push({
+            timestamp:r[0]||'', date:r[1]||'', time:r[2]||'', staff:r[3]||'',
+            campus:r[4]||'', area:r[5]||'', unit:r[6]||'', mode:r[7]||'',
+            category:r[8]||'', subcategory:r[9]||'', issue:r[10]||'', notes:r[11]||'',
+            status:r[12]||'Open', priority:r[13]||'',
+            escalated:(r[14]||'').trim().toLowerCase()==='yes', footprints:r[15]||'',
+            edOfInstruction:r[16]||'', edOfSupport:r[17]||'', areaCTM:r[18]||''
+          });
+        }
+        document.getElementById('statusLine').textContent =
+          'Loaded ' + ALL_ROWS.length + ' logged interactions \u00b7 updated ' + new Date().toLocaleTimeString();
+        render();
+      },
+      error: function(err){
+        document.getElementById('statusLine').textContent = 'Could not load the log: ' + err;
+        document.getElementById('statusLine').classList.add('err');
+      }
+    });
+  }
+
+  function render(){
+    const filterDate = document.getElementById('dateFilter').value || todayStr();
+    document.getElementById('dateLabel').textContent = fmtDateLabel(filterDate) + ' \u00b7 as of ' + new Date().toLocaleTimeString();
+
+    const dayRows = ALL_ROWS.filter(r => r.date === filterDate);
+
+    // KPI cards
+    const kpiGrid = document.getElementById('kpiGrid');
+    kpiGrid.innerHTML = '';
+    kpiGrid.innerHTML += `<div class="kpi total"><div class="n">${dayRows.length}</div><div class="l">Total Interactions</div></div>`;
+    MODES.forEach(m=>{
+      const c = dayRows.filter(r=>r.mode===m).length;
+      kpiGrid.innerHTML += `<div class="kpi" data-mode="${m}"><div class="n">${c}</div><div class="l">${MODE_LABEL[m]}</div></div>`;
+    });
+
+    // Category breakdown
+    const catCounts = {};
+    dayRows.forEach(r=>{ const k = r.category || 'Uncategorized'; catCounts[k] = (catCounts[k]||0)+1; });
+    const catEntries = Object.entries(catCounts).sort((a,b)=>b[1]-a[1]);
+    const maxCat = catEntries.length ? catEntries[0][1] : 1;
+    const catBody = document.querySelector('#catTable tbody');
+    catBody.innerHTML = catEntries.length ? catEntries.map(([cat,n])=>`
+      <tr><td>${escapeHtml(cat)}</td>
+      <td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:${(n/maxCat*100).toFixed(0)}%"></div></div></div></td>
+      <td class="count">${n}</td></tr>`).join('') : `<tr><td colspan="3" class="empty">No interactions logged yet for this date.</td></tr>`;
+
+    // Area breakdown (26-27 assignment structure)
+    const areaCounts = {};
+    dayRows.forEach(r=>{ const k = r.area || 'Unassigned / not matched'; areaCounts[k] = (areaCounts[k]||0)+1; });
+    const areaEntries = Object.entries(areaCounts).sort((a,b)=>b[1]-a[1]);
+    const maxArea = areaEntries.length ? areaEntries[0][1] : 1;
+    const areaBody = document.querySelector('#areaTable tbody');
+    areaBody.innerHTML = areaEntries.length ? areaEntries.map(([area,n])=>`
+      <tr><td>${escapeHtml(area)}</td>
+      <td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill alt" style="width:${(n/maxArea*100).toFixed(0)}%"></div></div></div></td>
+      <td class="count">${n}</td></tr>`).join('') : `<tr><td colspan="3" class="empty">No interactions logged yet for this date.</td></tr>`;
+
+    // Status pills
+    const statusCounts = {Open:0, 'Pending Follow-Up':0, Closed:0};
+    dayRows.forEach(r=>{ if (statusCounts[r.status]===undefined) statusCounts[r.status]=0; statusCounts[r.status]++; });
+    document.getElementById('statusPills').innerHTML = `
+      <div class="pill open"><div class="n">${statusCounts['Open']||0}</div><div class="l">Open</div></div>
+      <div class="pill pending"><div class="n">${statusCounts['Pending Follow-Up']||0}</div><div class="l">Pending</div></div>
+      <div class="pill closed"><div class="n">${statusCounts['Closed']||0}</div><div class="l">Closed</div></div>
+    `;
+
+    // Escalations
+    const escRows = dayRows.filter(r=>r.escalated || r.priority==='Urgent');
+    document.getElementById('escBadge').textContent = escRows.length;
+    document.getElementById('escList').innerHTML = escRows.length ? escRows.map(r=>`
+      <div class="esc-item">
+        <div class="top"><span>${escapeHtml(r.campus)} &mdash; ${escapeHtml(r.category)}</span><span>${escapeHtml(r.time)}</span></div>
+        <div class="meta">${escapeHtml(r.area ? r.area + (r.unit ? ' \u00b7 ' + r.unit : '') + ' \u00b7 ' : '')}${escapeHtml(r.footprints ? 'FP '+r.footprints+' \u00b7 ' : '')}${escapeHtml(r.status)}${r.priority ? ' \u00b7 '+escapeHtml(r.priority) : ''}</div>
+        <div class="note">${escapeHtml(r.issue)}</div>
+        ${r.areaCTM ? `<div class="subtle">Route to: ${escapeHtml(r.areaCTM)}${r.edOfSupport ? ' / '+escapeHtml(r.edOfSupport) : ''}</div>` : ''}
+      </div>`).join('') : `<div class="empty">No escalations flagged today.</div>`;
+
+    // Trends: repeat campus+category pairs today
+    const pairCounts = {};
+    dayRows.forEach(r=>{
+      const key = (r.campus||'\u2014') + ' | ' + (r.category||'\u2014');
+      if (!pairCounts[key]) pairCounts[key] = {campus:r.campus, category:r.category, count:0, notes:[]};
+      pairCounts[key].count++;
+      if (r.notes) pairCounts[key].notes.push(r.notes);
+    });
+    const trends = Object.values(pairCounts).filter(p=>p.count>=2).sort((a,b)=>b.count-a.count);
+    document.getElementById('trendList').innerHTML = trends.length ? trends.map(t=>`
+      <div class="trend-item">
+        <div class="top">${escapeHtml(t.campus)} &mdash; ${escapeHtml(t.category)} <span class="n">\u00d7${t.count}</span></div>
+        ${t.notes.length ? `<div class="note">${escapeHtml(t.notes.slice(0,2).join(' \u00b7 '))}</div>` : ''}
+      </div>`).join('') : `<div class="empty">No repeat campus + category patterns yet today.</div>`;
+
+    // Full log table
+    document.getElementById('logBadge').textContent = dayRows.length;
+    const logBody = document.getElementById('logBody');
+    const sorted = [...dayRows].sort((a,b)=> a.timestamp < b.timestamp ? 1 : -1);
+    logBody.innerHTML = sorted.length ? sorted.map(r=>`
+      <tr>
+        <td>${escapeHtml(r.time)}</td>
+        <td>${escapeHtml(r.campus)}</td>
+        <td>${escapeHtml(r.area)}${r.unit ? '<br><span class="subtle">'+escapeHtml(r.unit)+'</span>' : ''}</td>
+        <td>${escapeHtml(r.mode)}</td>
+        <td>${escapeHtml(r.category)}</td>
+        <td>${escapeHtml(r.subcategory)}</td>
+        <td>${escapeHtml(r.issue)}</td>
+        <td>${escapeHtml(r.notes)}</td>
+        <td><span class="tag ${r.status.replace(/ /g,'-')}" data-s="${escapeHtml(r.status)}">${escapeHtml(r.status)}</span></td>
+      </tr>`).join('') : `<tr><td colspan="9" class="empty">Nothing logged yet for this date.</td></tr>`;
+  }
+
+  document.getElementById('dateFilter').value = todayStr();
+  document.getElementById('dateFilter').addEventListener('change', render);
+  document.getElementById('refreshBtn').addEventListener('click', load);
+
+  load();
+</script>
+</body>
+</html>

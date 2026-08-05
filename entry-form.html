@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>FCC Quick Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Radio+Canada:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal:#00a3af; --teal-dark:#007a83;
+    --dark-green:#006f5b; --light-green:#6db83d;
+    --dark-grey:#24383c; --red:#d96364; --yellow:#f9d04e;
+    --blue:#4975bd; --purple:#484f99;
+    --bg:#f4f6f6; --card:#ffffff; --border:#dbe3e3;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Radio Canada',system-ui,sans-serif;
+    background:var(--bg); color:var(--dark-grey);
+    padding-bottom:100px;
+  }
+  header{
+    background:var(--teal); color:#fff; padding:18px 20px 22px;
+    position:sticky; top:0; z-index:10; box-shadow:0 2px 8px rgba(0,0,0,.08);
+  }
+  header h1{margin:0; font-size:1.15rem; font-weight:700; letter-spacing:.2px;}
+  header p{margin:4px 0 0; font-size:.8rem; opacity:.9;}
+  main{max-width:560px; margin:0 auto; padding:16px;}
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px;
+    padding:16px; margin-bottom:14px;
+  }
+  label{display:block; font-size:.78rem; font-weight:600; text-transform:uppercase;
+    letter-spacing:.4px; color:#4d5f63; margin-bottom:8px;}
+  .mode-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  @media(min-width:420px){ .mode-grid{grid-template-columns:repeat(5,1fr);} }
+  .mode-btn{
+    border:2px solid var(--border); background:#fff; border-radius:10px;
+    padding:12px 6px; font-family:inherit; font-weight:600; font-size:.8rem;
+    cursor:pointer; color:var(--dark-grey); text-align:center; transition:all .12s;
+  }
+  .mode-btn .ico{display:block; font-size:1.3rem; margin-bottom:4px;}
+  .mode-btn[data-mode="Phone Call"].active{background:var(--blue); border-color:var(--blue); color:#fff;}
+  .mode-btn[data-mode="Email"].active{background:var(--purple); border-color:var(--purple); color:#fff;}
+  .mode-btn[data-mode="Voicemail"].active{background:var(--dark-green); border-color:var(--dark-green); color:#fff;}
+  .mode-btn[data-mode="In-Person"].active{background:var(--teal); border-color:var(--teal); color:#fff;}
+  .mode-btn[data-mode="Online Form"].active{background:var(--light-green); border-color:var(--light-green); color:#fff;}
+
+  input[type=text], input[type=search], select, textarea{
+    width:100%; font-family:inherit; font-size:1rem; padding:11px 12px;
+    border:1.5px solid var(--border); border-radius:8px; background:#fff; color:var(--dark-grey);
+  }
+  textarea{resize:vertical; min-height:56px;}
+  input:focus, select:focus, textarea:focus{outline:none; border-color:var(--teal);}
+  select:disabled{background:#f3f5f5; color:#9aa8aa;}
+  .row{margin-bottom:14px;}
+  .row:last-child{margin-bottom:0;}
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
+  .assign-box{
+    margin-top:10px; padding:10px 12px; border-radius:8px; background:#eef8f8;
+    border:1px solid #cfe9ea; font-size:.8rem; line-height:1.5; display:none;
+  }
+  .assign-box.show{display:block;}
+  .assign-box .a-title{font-weight:700; color:var(--teal-dark); font-size:.78rem; text-transform:uppercase; letter-spacing:.3px; margin-bottom:4px;}
+  .assign-box .a-row{color:#3d4d50;}
+  .assign-box .a-row b{color:var(--dark-grey);}
+  .assign-warn{margin-top:10px; padding:8px 12px; border-radius:8px; background:#fdf6dd; border:1px solid #f3e5a8; font-size:.78rem; color:#7a6100; display:none;}
+  .assign-warn.show{display:block;}
+
+  .status-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
+  .status-btn{
+    border:2px solid var(--border); background:#fff; border-radius:8px;
+    padding:10px 4px; font-family:inherit; font-weight:600; font-size:.78rem;
+    cursor:pointer; color:var(--dark-grey);
+  }
+  .status-btn[data-status="Open"].active{background:var(--red); border-color:var(--red); color:#fff;}
+  .status-btn[data-status="Pending Follow-Up"].active{background:var(--yellow); border-color:var(--yellow); color:var(--dark-grey);}
+  .status-btn[data-status="Closed"].active{background:var(--light-green); border-color:var(--light-green); color:#fff;}
+
+  details{margin-top:2px;}
+  summary{cursor:pointer; font-size:.82rem; font-weight:600; color:var(--teal-dark); padding:4px 0;}
+  .esc-row{display:flex; align-items:center; gap:8px; margin-top:12px;}
+  .esc-row input{width:auto;}
+  .esc-row label{margin:0; text-transform:none; letter-spacing:0; font-size:.85rem; font-weight:500;}
+
+  .submit-bar{
+    position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--border);
+    padding:12px 16px; box-shadow:0 -2px 10px rgba(0,0,0,.06);
+  }
+  .submit-bar-inner{max-width:560px; margin:0 auto;}
+  button.submit{
+    width:100%; background:var(--teal); color:#fff; border:none; border-radius:10px;
+    padding:15px; font-family:inherit; font-size:1.02rem; font-weight:700; cursor:pointer;
+  }
+  button.submit:active{background:var(--teal-dark);}
+  button.submit:disabled{opacity:.6;}
+
+  .toast{
+    position:fixed; top:14px; left:50%; transform:translateX(-50%) translateY(-60px);
+    background:var(--dark-green); color:#fff; padding:10px 20px; border-radius:30px;
+    font-weight:600; font-size:.9rem; box-shadow:0 4px 14px rgba(0,0,0,.18);
+    transition:transform .25s ease; z-index:50;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);}
+  .req{color:var(--red);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>FCC Quick Log</h1>
+  <p>Log every call, email, voicemail, walk-in, and form as it comes in.</p>
+</header>
+
+<div class="toast" id="toast">Logged &check;</div>
+
+<main>
+  <form id="entryForm" method="POST" target="hidden_iframe">
+
+    <div class="card">
+      <label>Mode of contact <span class="req">*</span></label>
+      <div class="mode-grid" id="modeGrid">
+        <button type="button" class="mode-btn" data-mode="Phone Call"><span class="ico">&#128222;</span>Phone</button>
+        <button type="button" class="mode-btn" data-mode="Email"><span class="ico">&#9993;&#65039;</span>Email</button>
+        <button type="button" class="mode-btn" data-mode="Voicemail"><span class="ico">&#127911;&#65039;</span>Voicemail</button>
+        <button type="button" class="mode-btn" data-mode="In-Person"><span class="ico">&#128682;</span>In-Person</button>
+        <button type="button" class="mode-btn" data-mode="Online Form"><span class="ico">&#128221;</span>Form</button>
+      </div>
+      <input type="hidden" name="mode" id="modeInput" required>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <label for="campus">Campus <span class="req">*</span></label>
+        <input type="text" id="campus" name="campus" list="campusList" autocomplete="off" placeholder="Start typing a campus name..." required>
+        <datalist id="campusList"></datalist>
+        <div class="assign-box" id="assignBox">
+          <div class="a-title">26-27 Area Assignment</div>
+          <div class="a-row"><b id="a-area"></b> &middot; <span id="a-unit"></span></div>
+          <div class="a-row">Ed. of Instruction: <b id="a-edi"></b></div>
+          <div class="a-row">Ed. of Support: <b id="a-eds"></b></div>
+          <div class="a-row">Area CTM: <b id="a-ctm"></b></div>
+        </div>
+        <div class="assign-warn" id="assignWarn">No area assignment on file for this campus name yet &mdash; double check spelling, or this may be a new/unlisted site.</div>
+        <input type="hidden" name="area" id="areaInput">
+        <input type="hidden" name="unit" id="unitInput">
+        <input type="hidden" name="edOfInstruction" id="ediInput">
+        <input type="hidden" name="edOfSupport" id="edsInput">
+        <input type="hidden" name="areaCTM" id="ctmInput">
+      </div>
+      <div class="row">
+        <label for="category">Category <span class="req">*</span></label>
+        <select id="category" name="category" required>
+          <option value="" disabled selected>Select a category...</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="subcategory">Subcategory <span style="font-weight:500;text-transform:none;color:#7a8a8d;">(optional)</span></label>
+        <select id="subcategory" name="subcategory" disabled>
+          <option value="" selected>Select a category first...</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="issue">What's the issue <span class="req">*</span></label>
+        <textarea id="issue" name="issue" placeholder="One line - e.g. Parent requesting transfer due to ongoing bullying" required></textarea>
+      </div>
+      <div class="row">
+        <label for="notes">Quick notes <span style="font-weight:500;text-transform:none;color:#7a8a8d;">(for trend tracking)</span></label>
+        <textarea id="notes" name="notes" placeholder="Anything worth flagging for patterns - repeat caller, campus-wide issue, etc."></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>Status</label>
+      <div class="status-grid" id="statusGrid">
+        <button type="button" class="status-btn active" data-status="Open">Open</button>
+        <button type="button" class="status-btn" data-status="Pending Follow-Up">Pending</button>
+        <button type="button" class="status-btn" data-status="Closed">Closed</button>
+      </div>
+      <input type="hidden" name="status" id="statusInput" value="Open">
+
+      <div class="esc-row">
+        <input type="checkbox" id="escalated" name="escalated" value="Yes">
+        <label for="escalated">Flag as escalation / critical issue</label>
+      </div>
+
+      <details>
+        <summary>More detail (optional)</summary>
+        <div class="row" style="margin-top:10px;">
+          <label for="priority">Priority</label>
+          <select id="priority" name="priority">
+            <option value="">-</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Urgent">Urgent</option>
+          </select>
+        </div>
+        <div class="two-col">
+          <div>
+            <label for="footprints">FOOTPRINTS #</label>
+            <input type="text" id="footprints" name="footprints" placeholder="e.g. 63706">
+          </div>
+          <div>
+            <label for="staff">Your initials</label>
+            <input type="text" id="staff" name="staff" placeholder="e.g. SK">
+          </div>
+        </div>
+      </details>
+    </div>
+  </form>
+</main>
+
+<div class="submit-bar">
+  <div class="submit-bar-inner">
+    <button type="submit" class="submit" id="submitBtn" form="entryForm">Log this interaction</button>
+  </div>
+</div>
+
+<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+
+<script>
+  // -- SETUP: paste your Apps Script Web App URL here after deployment --
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzUJ2F8fBhXySO56oJcZJUmlU1eli7TtvMw4PboGSE_U4T1-WDffGqd8GbGidpOFlWv/exec";
+
+  // 26-27 SY campus -> area/unit assignment lookup, built from
+  // "26-27 SY Area Office Unit Assignments.xlsx"
+const CAMPUS_ASSIGNMENTS = {
+  'Almeda ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Erica Tran', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Anderson ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Tracie Hart-Jackson', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Arabic Immersion': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Lisa Hernandez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Ashford ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Dr. Deshonta Everett', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Askew ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Dr. Deshonta Everett', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Atherton ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Erika Kimble', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Attucks MS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Jason Davila', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Austin HS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Victor Garcia', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'BCM Biotech @ Rusk MS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Ashley Moorman', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Baker Montessori': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Lisa Hernandez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Barbara Jordan Career Center': {area:'Charters/Programs – Office of Academics', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'Barrick ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Alicia Puente', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Bastian ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Tracie Hart-Jackson', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Baylor @ Ryan MS': {area:'EAS Secondary', unit:'Unit 1', edOfInstruction:'Nirmol Lim', edOfSupport:'Maria Narvaez', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Bell ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Nicole Montgomery-Sanders', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Bellaire HS': {area:'EAS Secondary', unit:'Unit 1', edOfInstruction:'Dr. Tiffany Chenier', edOfSupport:'Maria Narvaez', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Bellfort ECC': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Benjamin Grijalva', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Benavides ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Dr. Deshonta Everett', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Benbrook ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Erika Carter', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Berry ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Alicia Puente', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Black MS': {area:'EAS Secondary', unit:'Unit 1', edOfInstruction:'Lindsey Vela', edOfSupport:'Maria Narvaez', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Blackshear ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Treasure West', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Bonham ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Dr. Deshonta Everett', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Bonner ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Tudon Martinez', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Braeburn ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Darcele Lofton', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Briargrove ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Reginald Fisher', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Briarmeadow': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Lisa Hernandez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Brookline ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Tudon Martinez', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Browning ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Erika Kimble', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Bruce ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Erika Kimble', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Burbank ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Edmond Henderson', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Burbank MS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Ashley Moorman', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Burnet ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Dr. Criselda Flores', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Bush ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Lauren Mailhiot', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Cage ES (@Lantrip ES)': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Pandora Agnew', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Carnegie HS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Keri Ward', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Carrillo ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Dr. Criselda Flores', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Challenge EC HS': {area:'Charters/Programs – 1882', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'Chavez HS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Jason Davila', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Chrysalis MS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Victor Garcia', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Clifton MS': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'Marta Rivas', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Codwell ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Shanica Smith', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Community Services': {area:'Charters/Programs – Programs', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'Condit ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Reginald Fisher', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Cook ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Nicole Williams', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Coop ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Alicia Puente', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Cornelius ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Mar Azcarraga', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Crespo ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Mar Azcarraga', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Crockett ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Erika Kimble', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Cullen MS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Yolanda Bruce', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Cunningham ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Darcele Lofton', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'DAEP EL': {area:'Charters/Programs – Programs', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'Daily ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Reginald Fisher', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Davila ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Mar Azcarraga', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'De Zavala ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Dr. Criselda Flores', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'DeAnda ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Mar Azcarraga', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'DeBakey HS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Erick Posadas', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'DeChaumes ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Nancy Flores', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Deady MS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Yolanda Bruce', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Dogan ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Alejandro Lopez', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Durham ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Nancy Flores', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Durkee ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Erika Carter', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'East Early HS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Ashley Moorman', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Eastwood Acad HS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Ashley Moorman', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Edison MS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Victor Garcia', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Eliot ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Alejandro Lopez', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Elmore ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Nicole Williams', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Elrod ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Darcele Lofton', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Emerson ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Lauren Mailhiot', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Energized ECC': {area:'Charters/Programs – Charters', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'Energized ES': {area:'Charters/Programs – Charters', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'Energized MS': {area:'Charters/Programs – Charters', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'Energized for STEM Acad HS': {area:'Charters/Programs – Charters', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'Energized for STEM Acad MS': {area:'Charters/Programs – Charters', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'Energy Inst HS': {area:'Charters/Programs – 1882', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'Farias ECC': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Benjamin Grijalva', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Field ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Nancy Flores', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Fleming/McReynolds (@ Leland MS )': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'Kim Williams', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Foerster ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Tracie Hart-Jackson', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Fondern ES': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Zaira Gomez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Fondren MS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Yolanda Bruce', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Fonville MS': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'Marta Rivas', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Fonwood ECC': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Benjamin Grijalva', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Forest Brook MS': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'TJ Cotter', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Foster ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Treasure West', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Frost ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Shanica Smith', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Furr HS': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'Marta Rivas', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Gallegos ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Dr. Criselda Flores', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Garcia ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Alicia Puente', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Garden Oaks K - 8': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Lisa Hernandez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Garden Villas ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Mar Azcarraga', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Golfcrest ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Tudon Martinez', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Gregg ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Erica Tran', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Gregory Lincoln ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Alejandro Lopez', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Grissom ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Erica Tran', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Gross ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Dr. Deshonta Everett', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'HAIS': {area:'Charters/Programs – 1882', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'Halpin ECC': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Benjamin Grijalva', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Hamilton MS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Keri Ward', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Harper/Secondary DAEP': {area:'Charters/Programs – Programs', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'Harris RP ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Pandora Agnew', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Harris, JR ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Dr. Criselda Flores', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Hartman MS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Diego Linares', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Hartsfield ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Tudon Martinez', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Harvard ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Nancy Flores', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Heights HS': {area:'EAS Secondary', unit:'Unit 1', edOfInstruction:'Nirmol Lim', edOfSupport:'Maria Narvaez', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Helms ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Nancy Flores', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Henry MS': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'Marta Rivas', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Herod ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Darcele Lofton', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Herrera ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Edmond Henderson', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'High School Ahead MS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Erick Posadas', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Highland Height ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Erika Carter', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Hilliard ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Nicole Williams', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Hines-Caldwell ES': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Zaira Gomez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Hobby ES (@Lawson MS)': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Erica Tran', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Hogg MS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Erick Posadas', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Holland MS': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'Kim Williams', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Horn ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Reginald Fisher', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Houston MSTC': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'Marta Rivas', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Isaacs ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Alejandro Lopez', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'JJAEP': {area:'Charters/Programs – Programs', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'JP Henderson ES': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Zaira Gomez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Janowski ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Edmond Henderson', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Jefferson ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Dr. Criselda Flores', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Jones Futures HS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Ashley Moorman', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Kashmere Gardens ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Pandora Agnew', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Kashmere HS': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'TJ Cotter', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Kelso ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Nicole Montgomery-Sanders', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Kennedy ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Alicia Puente', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Ketelsen ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Erika Kimble', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Key MS': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'TJ Cotter', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Kinder HSPVA': {area:'Charters/Programs – 1882', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'Kolter ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Lauren Mailhiot', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Lamar HS': {area:'EAS Secondary', unit:'Unit 1', edOfInstruction:'Nirmol Lim', edOfSupport:'Maria Narvaez', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Lanier MS': {area:'EAS Secondary', unit:'Unit 1', edOfInstruction:'Lindsey Vela', edOfSupport:'Maria Narvaez', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Lantrip ES': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Zaira Gomez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Laurenzo ECC': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Benjamin Grijalva', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Law & Justice HS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Keri Ward', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Law ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Treasure West', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Lawson MS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Keoshya Dunn', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Leland YMCPA': {area:'EAS Secondary', unit:'Unit 1', edOfInstruction:'Nirmol Lim', edOfSupport:'Maria Narvaez', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Lewis ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Nicole Montgomery-Sanders', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Liberty HS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Erick Posadas', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Lockhart ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Treasure West', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Long Acad': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Keoshya Dunn', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Longfellow ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Treasure West', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Looscan ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Erika Kimble', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Love ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Nancy Flores', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Lovett ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Reginald Fisher', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Lyons ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Edmond Henderson', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'M. White ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Lauren Mailhiot', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'MC Fraga EC HS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Jason Davila', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'MLK ECC': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Benjamin Grijalva', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'MacGregor ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Frankie Pollock', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Mading ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Nicole Montgomery-Sanders', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Madison HS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Keoshya Dunn', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Mandarin Immersion': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Lisa Hernandez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Marshall ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Nicole Williams', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Marshall MS': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'Kim Williams', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Martinez R. ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Treasure West', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Martinez, C. ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Pandora Agnew', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'McGowen ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Nicole Williams', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'McNamara ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Lauren Mailhiot', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'McWilliams MS': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'Marta Rivas', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Memorial ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Vanessa Flores', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Meyerland MS': {area:'EAS Secondary', unit:'Unit 1', edOfInstruction:'Dr. Tiffany Chenier', edOfSupport:'Maria Narvaez', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Milby HS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Jason Davila', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Milne ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Tracie Hart-Jackson', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Mistral ECC': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Benjamin Grijalva', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Mitchell ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Shanica Smith', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Montgomery ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Erica Tran', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Moreno ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Edmond Henderson', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Navarro MS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Victor Garcia', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Neff ECC': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Benjamin Grijalva', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Neff ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Tracie Hart-Jackson', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'North Forest HS': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'Kim Williams', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'North Houston EC HS': {area:'EAS Secondary', unit:'Unit 1', edOfInstruction:'Nirmol Lim', edOfSupport:'Maria Narvaez', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Northline ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Alicia Puente', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Northside HS': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'TJ Cotter', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Oak Forest ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Frankie Pollock', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Oates ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Pandora Agnew', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Ortiz MS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Yolanda Bruce', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Osborne ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Alicia Puente', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Paige ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Nicole Williams', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Park Place ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Mar Azcarraga', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Parker ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Darcele Lofton', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Patterson ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Mar Azcarraga', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Peck ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Erika Kimble', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Pershing MS': {area:'EAS Secondary', unit:'Unit 1', edOfInstruction:'Lindsey Vela', edOfSupport:'Maria Narvaez', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Petersen ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Erica Tran', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Pilgrim Acad': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Lisa Hernandez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Pin Oak MS': {area:'EAS Secondary', unit:'Unit 1', edOfInstruction:'Dr. Tiffany Chenier', edOfSupport:'Maria Narvaez', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Piney Point ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Lauren Mailhiot', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Pleasantville ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Pandora Agnew', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Poe ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Vanessa Flores', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Pugh ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Alejandro Lopez', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Reagan K-8': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Erica Tran', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Red ES': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Zaira Gomez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Revere MS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Keoshya Dunn', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Reynolds ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Shanica Smith', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Rice School': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Lisa Hernandez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'River Oaks ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Vanessa Flores', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Roberts ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Vanessa Flores', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Robinson ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Pandora Agnew', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Rodriguez ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Darcele Lofton', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Roosevelt ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Frankie Pollock', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Rucker ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Tudon Martinez', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'SPED HCC Lifeskills': {area:'Charters/Programs – Office of Academics', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'SPED RDSPD': {area:'Charters/Programs – Office of Academics', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'SPED SOAR': {area:'Charters/Programs – Office of Academics', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'Sanchez ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Tudon Martinez', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Scarborough ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Edmond Henderson', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Scarborough HS': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'TJ Cotter', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Scroggins ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Alejandro Lopez', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Seguin ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Nicole Montgomery-Sanders', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Shadowbriar ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Reginald Fisher', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Shadydale ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Nicole Williams', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Sharpstown HS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Diego Linares', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Sharpstown Int': {area:'EAS Secondary', unit:'Unit 1', edOfInstruction:'Lindsey Vela', edOfSupport:'Maria Narvaez', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Shearn ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Reginald Fisher', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Sherman ES': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Zaira Gomez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Sinclair ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Frankie Pollock', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Smith ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Erika Carter', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'South Early HS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Erick Posadas', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Southmayd ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Dr. Criselda Flores', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'St. George ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Darcele Lofton', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Sterling HS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Yolanda Bruce', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Stevens ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Erika Carter', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Stevenson MS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Jason Davila', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Sugar Grove MS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Diego Linares', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Sutton ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Lauren Mailhiot', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'TCAH': {area:'Charters/Programs – Charters', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'TH Rogers': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Frankie Pollock', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'TIjerina ES': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Zaira Gomez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Tanglewood MS': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Keri Ward', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Thomas MS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Keoshya Dunn', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Thompson ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Treasure West', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Tinsley ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Tracie Hart-Jackson', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Travis ES': {area:'EAS Elementary', unit:'Unit 2', edOfInstruction:'Frankie Pollock', edOfSupport:'Thyrun Hurst', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Twain ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Vanessa Flores', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Valley West ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Tracie Hart-Jackson', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Virtual Launchpad': {area:'Charters/Programs – Office of Academics', unit:'', edOfInstruction:'', edOfSupport:'', areaCTM:'Marvin Birks (Director II, COSO)', deputyChief:'Dr. Emilio Castro / Dr. Kylene Vasquez (Senior Exec. Dir. of Support, COSO)'},
+  'Wainwright ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Erika Carter', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Walnut Bend ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Dr. Deshonta Everett', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Waltrip HS': {area:'EAS Secondary', unit:'Unit 1', edOfInstruction:'Lindsey Vela', edOfSupport:'Maria Narvaez', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Washington HS': {area:'NES Secondary', unit:'Unit 1', edOfInstruction:'Kim Williams', edOfSupport:'Eric Brown', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Welch MS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Diego Linares', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Wesley ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Erika Carter', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'West Briar MS': {area:'EAS Secondary', unit:'Unit 1', edOfInstruction:'Dr. Tiffany Chenier', edOfSupport:'Maria Narvaez', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'West University ES': {area:'EAS Elementary', unit:'Unit 3', edOfInstruction:'Vanessa Flores', edOfSupport:'Idara Yates', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Westbury HS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Diego Linares', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Westside HS': {area:'EAS Secondary', unit:'Unit 1', edOfInstruction:'Dr. Tiffany Chenier', edOfSupport:'Maria Narvaez', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Wharton': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Lisa Hernandez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Wheatley HS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Yolanda Bruce', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Whidby ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Shanica Smith', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'White, Ed. ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Dr. Deshonta Everett', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Whittier ES': {area:'NES Elementary', unit:'Unit 3', edOfInstruction:'Alejandro Lopez', edOfSupport:'Inge Garibaldi', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Windsor Village ES': {area:'EAS Elementary', unit:'Unit 1', edOfInstruction:'Zaira Gomez', edOfSupport:'Gricelda Montemayor', areaCTM:'Paul Sipp', deputyChief:'Dr. Mario Sandoval'},
+  'Wisdom HS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Keoshya Dunn', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Woodson ES': {area:'NES Elementary', unit:'Unit 1', edOfInstruction:'Shanica Smith', edOfSupport:'Oscar Adams', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+  'Worthing HS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Yolanda Bruce', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'YWCPA': {area:'EAS Secondary', unit:'Unit 2', edOfInstruction:'Keri Ward', edOfSupport:'Wendy Hampton', areaCTM:'Michelle Geters', deputyChief:'Dr. April Williams'},
+  'Yates HS': {area:'NES Secondary', unit:'Unit 2', edOfInstruction:'Victor Garcia', edOfSupport:'Joffery Jones', areaCTM:'Brandi LeBlanc', deputyChief:'Dr. Delinda Castro'},
+  'Young ES': {area:'NES Elementary', unit:'Unit 2', edOfInstruction:'Nicole Montgomery-Sanders', edOfSupport:'Leon Scott', areaCTM:'Aaliyah Floyd', deputyChief:'Leigha Curry'},
+};
+
+  const CAMPUS_LIST = Object.keys(CAMPUS_ASSIGNMENTS).sort();
+
+  // Category / subcategory taxonomy, built from "FCC Topics List.docx"
+const CATEGORY_TAXONOMY = {
+  'Alternative Placement/Appeals': {group: 'Discipline', subtypes: ['Suspension', 'Detention', 'In-School Suspension', 'Documentation not provided', 'DAEP placement', 'DAEP appeal process', 'Disciplinary hearing', 'Expulsion concerns', 'Placement meetings', 'Student graduating while in DAEP']},
+  'Attendance': {group: null, subtypes: ['Truancy', 'Attendance corrections', 'Perfect attendance recognition', 'Excessive absences', 'Tardies', 'Homebound program', 'Attendance appeals', 'Student marked absent incorrectly']},
+  'Building Maintenance': {group: null, subtypes: ['HVAC/AC not working', 'Heating issues', 'Restroom problems', 'Temperature issues (cold/hot classrooms)', 'Safety hazards', 'Water issues', 'Pest control (snakes)', 'Sewer problems', 'Dirty facilities']},
+  'Bullying': {group: null, subtypes: ['Ongoing/repeated bullying', 'Student-to-student', 'Staff-to-student', 'Physical altercations', 'Harassment', 'Resolution needed', 'No intervention/support', 'Escalation required']},
+  'Complaint Concern on Campus Staff': {group: null, subtypes: ['Staff unprofessionalism', 'Teacher misconduct/behavior', 'Principal communication issues', 'Counselor concerns', 'Follow-up needed', 'Escalation required', 'Staff favoritism', 'Retaliation/threats', 'Inappropriate comments to students', 'Lack of response/communication', 'Front office staff issues', 'Cafe/cafeteria personnel', 'Crossing guard issues', 'Administrative conduct']},
+  'Dress Code': {group: null, subtypes: ['Uniform requirements', 'Policy violations', 'Earrings/jewelry', 'Headphones policy']},
+  'Electronic Devices': {group: null, subtypes: ['Password resets', 'Student email access', 'Device returns (laptops, Chromebooks)', 'Cell phone confiscation', 'Login issues', 'Lost/found devices', 'Parent portal login']},
+  'Enrollment': {group: null, subtypes: ['Zoned school issues', 'Out of district enrollment', 'Hardship enrollment', 'Documentation issues (guardianship, custody, residency)', 'Online enrollment problems', 'Homeless enrollment', 'Foster student enrollment', 'PK/Kinder enrollment', 'School capping', 'Withdrawal issues', 'Re-enrollment', 'Enrollment denial', 'Transfer assistance']},
+  'Other Department / Referrals': {group: null, subtypes: ['Student Records', 'HR/Human Resources', 'Benefits', 'Payroll', 'IT/Technical support', 'Athletics', 'Nutrition Services', 'Purchasing/Procurement', 'Transcript requests', 'W-2 forms', 'Employee Services/Relations', 'Legal Department', 'Real Estate', 'Board Services', 'Talent Management/Acquisition', 'Assessment', 'Curriculum', 'VIPS', 'Communications/Press', 'Homeless Division', 'McKinney-Vento', 'Controller\'s Office', 'CCMR Department']},
+  'Grades': {group: null, subtypes: ['Grade concerns/disputes', 'Grade changes', 'Academic standing', 'Assignment issues', 'Final grades', 'Report cards']},
+  'Policy & Procedures': {group: null, subtypes: ['ParentSquare access', 'PowerSchool access', 'Parent portal access', 'Attendance policies', 'Suspension policies', 'Tardies policy', 'Student safety concerns', 'Release of information', 'CPS reporting', 'LEP coding', 'Cell phone policy', 'Bathroom/water break policies', 'Guardianship documentation', 'Grade/grading policies', 'Detention policies', 'Dress code/uniform policy', 'Field trip policies', 'Early dismissal', 'Homeschool information', 'Pick-up list/authorization']},
+  'Promotion Standards': {group: null, subtypes: ['Graduation requirements', 'Class ranking/top 10%', 'Summer school requirements', 'Grade level promotion', 'Credit recovery', 'Transition to next level']},
+  'Resources': {group: null, subtypes: ['Homeless Division referrals', 'Clothing assistance', 'Housing assistance', 'Sunrise Center', 'Community resources', 'Food assistance', 'Crisis intervention', 'Brock Center']},
+  'School Programs': {group: null, subtypes: ['ESL/LEP programs', 'GT (Gifted & Talented) programs', 'Virtual school/Future 2', 'After-school programs', 'Credit recovery', 'Dual credit']},
+  'School Choice': {group: null, subtypes: ['Applications', 'Transfer requests', 'PK enrollment', 'School selection assistance', 'Acceptance/denial', 'Virtual school information', 'GT programs', 'Application issues', 'Seat acceptance']},
+  'Special Ed': {group: null, subtypes: ['IEP issues/not being followed', 'ARD meetings (not held, missing)', 'Evaluations needed', 'Transportation needs', 'Accommodations not provided', 'SPED records requests', '504 plans', 'Speech services', 'Behavior support', 'DAEP referrals without ARD']},
+  'Summer School': {group: null, subtypes: ['Enrollment information', 'Dates/schedules', 'Host schools', 'Requirements', 'Pay/compensation (for employees)']},
+  'Transfers VCV': {group: null, subtypes: ['Safety transfers', 'Medical transfers', 'Documentation requirements', 'Hardship transfers']},
+  'Transportation': {group: null, subtypes: ['Bus route issues', 'Transportation applications', 'Metro card/bus pass requests', 'Route number requests', 'Late buses', 'Bus driver misconduct', 'Transportation for DAEP students', 'Special Ed transportation', 'Distance/hardship transportation', 'Bus stop issues']},
+  'School Closures': {group: null, subtypes: ['Co-location information', 'Zoned school changes', 'School selection assistance', 'Transition support', 'Tour information', 'Enrollment at new campus']},
+  'Parent Classes': {group: null, subtypes: ['Parent Power Sessions', 'Parent University', 'Workshop invitations', 'Ambassador programs', 'FCC events', 'Spring events']},
+  'Homeless Students': {group: null, subtypes: ['McKinney-Vento enrollment', 'Transportation', 'Documentation', 'Unaccompanied youth', 'Hardship enrollment']},
+};
+
+  // ---- Campus datalist + area auto-populate ----
+  const campusListEl = document.getElementById('campusList');
+  CAMPUS_LIST.forEach(c=>{
+    const o = document.createElement('option'); o.value = c; campusListEl.appendChild(o);
+  });
+
+  const campusInput = document.getElementById('campus');
+  const assignBox = document.getElementById('assignBox');
+  const assignWarn = document.getElementById('assignWarn');
+
+  function updateAssignment(){
+    const val = campusInput.value.trim();
+    const match = CAMPUS_ASSIGNMENTS[val];
+    assignBox.classList.remove('show');
+    assignWarn.classList.remove('show');
+    ['areaInput','unitInput','ediInput','edsInput','ctmInput'].forEach(id=>document.getElementById(id).value='');
+
+    if (!val) return;
+
+    if (match) {
+      document.getElementById('a-area').textContent = match.area;
+      document.getElementById('a-unit').textContent = match.unit || '—';
+      document.getElementById('a-edi').textContent = match.edOfInstruction || '—';
+      document.getElementById('a-eds').textContent = match.edOfSupport || '—';
+      document.getElementById('a-ctm').textContent = match.areaCTM || '—';
+      assignBox.classList.add('show');
+
+      document.getElementById('areaInput').value = match.area || '';
+      document.getElementById('unitInput').value = match.unit || '';
+      document.getElementById('ediInput').value = match.edOfInstruction || '';
+      document.getElementById('edsInput').value = match.edOfSupport || '';
+      document.getElementById('ctmInput').value = match.areaCTM || '';
+    } else {
+      assignWarn.classList.add('show');
+    }
+  }
+  campusInput.addEventListener('input', updateAssignment);
+  campusInput.addEventListener('change', updateAssignment);
+
+  // ---- Category / subcategory cascading dropdowns ----
+  const categorySelect = document.getElementById('category');
+  const subcategorySelect = document.getElementById('subcategory');
+
+  // Group categories that share a `group` under an <optgroup>; everything else stays flat.
+  const groups = {};
+  const ungrouped = [];
+  Object.keys(CATEGORY_TAXONOMY).forEach(cat=>{
+    const g = CATEGORY_TAXONOMY[cat].group;
+    if (g) { (groups[g] = groups[g] || []).push(cat); }
+    else { ungrouped.push(cat); }
+  });
+  Object.keys(groups).forEach(g=>{
+    const og = document.createElement('optgroup'); og.label = g;
+    groups[g].forEach(cat=>{
+      const o = document.createElement('option'); o.value = cat; o.textContent = cat; og.appendChild(o);
+    });
+    categorySelect.appendChild(og);
+  });
+  ungrouped.forEach(cat=>{
+    const o = document.createElement('option'); o.value = cat; o.textContent = cat; categorySelect.appendChild(o);
+  });
+
+  categorySelect.addEventListener('change', ()=>{
+    const cat = categorySelect.value;
+    subcategorySelect.innerHTML = '';
+    const entry = CATEGORY_TAXONOMY[cat];
+    if (!entry || !entry.subtypes.length) {
+      subcategorySelect.disabled = true;
+      const o = document.createElement('option'); o.value=''; o.textContent='No subcategories for this category'; o.selected=true;
+      subcategorySelect.appendChild(o);
+      return;
+    }
+    subcategorySelect.disabled = false;
+    const ph = document.createElement('option'); ph.value=''; ph.textContent='Select a subcategory (optional)'; ph.selected=true;
+    subcategorySelect.appendChild(ph);
+    entry.subtypes.forEach(s=>{
+      const o = document.createElement('option'); o.value = s; o.textContent = s; subcategorySelect.appendChild(o);
+    });
+  });
+
+  // Mode buttons
+  const modeInput = document.getElementById('modeInput');
+  document.querySelectorAll('.mode-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      modeInput.value = btn.dataset.mode;
+    });
+  });
+
+  // Status buttons
+  const statusInput = document.getElementById('statusInput');
+  document.querySelectorAll('.status-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.status-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      statusInput.value = btn.dataset.status;
+    });
+  });
+
+  const form = document.getElementById('entryForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const toast = document.getElementById('toast');
+  const iframe = document.getElementById('hidden_iframe');
+  let awaitingResponse = false;
+  let lastStaffValue = "";
+
+  form.addEventListener('submit', (e)=>{
+    if (!modeInput.value) {
+      e.preventDefault();
+      alert('Pick a mode of contact (phone, email, voicemail, in-person, or form).');
+      return;
+    }
+    if (WEB_APP_URL.indexOf('PASTE_YOUR') === 0) {
+      e.preventDefault();
+      alert('Setup needed: paste your Apps Script Web App URL into entry-form.html first.');
+      return;
+    }
+    form.action = WEB_APP_URL;
+    awaitingResponse = true;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Logging...';
+    lastStaffValue = document.getElementById('staff').value;
+  });
+
+  iframe.addEventListener('load', ()=>{
+    if (!awaitingResponse) return;
+    awaitingResponse = false;
+
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'), 1400);
+
+    // Reset for the next entry, but keep staff initials for speed
+    document.getElementById('campus').value = '';
+    updateAssignment();
+    categorySelect.selectedIndex = 0;
+    subcategorySelect.innerHTML = '<option value="" selected>Select a category first...</option>';
+    subcategorySelect.disabled = true;
+    document.getElementById('issue').value = '';
+    document.getElementById('notes').value = '';
+    document.getElementById('footprints').value = '';
+    document.getElementById('priority').value = '';
+    document.getElementById('escalated').checked = false;
+    document.getElementById('staff').value = lastStaffValue;
+
+    document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+    modeInput.value = '';
+
+    document.querySelectorAll('.status-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelector('.status-btn[data-status="Open"]').classList.add('active');
+    statusInput.value = 'Open';
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Log this interaction';
+    document.getElementById('campus').focus();
+  });
+</script>
+</body>
+</html>
