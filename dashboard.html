@@ -24,13 +24,16 @@
   .hdr-wrap{max-width:1180px; margin:0 auto; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px;}
   header h1{margin:0; font-size:1.5rem; font-weight:800; letter-spacing:.2px;}
   header .sub{font-size:.85rem; opacity:.9; margin-top:4px;}
-  .controls{display:flex; gap:8px; align-items:center;}
-  .controls button, .controls input[type=date]{
+  .controls{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .controls button, .controls input[type=date], .controls input[type=time]{
     font-family:inherit; border-radius:8px; border:1px solid rgba(255,255,255,.5);
     background:rgba(255,255,255,.15); color:#fff; padding:8px 14px; font-size:.85rem; font-weight:600; cursor:pointer;
   }
-  .controls input[type=date]{cursor:default; color-scheme:dark;}
+  .controls input[type=date], .controls input[type=time]{cursor:default; color-scheme:dark;}
   .controls button:hover{background:rgba(255,255,255,.28);}
+  .time-range{display:flex; align-items:center; gap:6px;}
+  .time-range input[type=time]{padding:8px 10px;}
+  .to-sep{color:#fff; font-size:.8rem; opacity:.85;}
 
   main{max-width:1180px; margin:0 auto; padding:22px 20px 60px;}
   .status-line{font-size:.85rem; color:var(--muted); margin-bottom:18px;}
@@ -117,6 +120,12 @@
     </div>
     <div class="controls">
       <input type="date" id="dateFilter">
+      <span class="time-range">
+        <input type="time" id="timeFrom" aria-label="From time">
+        <span class="to-sep">to</span>
+        <input type="time" id="timeTo" aria-label="To time">
+      </span>
+      <button id="resetTimeBtn" title="Clear the time range and show the full day">All day</button>
       <button id="refreshBtn">&#8635; Refresh</button>
       <button onclick="window.print()">&#128424; Print / Save PDF</button>
     </div>
@@ -186,6 +195,22 @@
     return dt.toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric', year:'numeric'});
   }
 
+  // Pulls "HH:MM" (24-hr) out of the Timestamp column ("yyyy-MM-dd HH:mm:ss"),
+  // rather than the display Time column ("7:52 AM") which doesn't sort correctly
+  // as plain text.
+  function rowTime24(r){
+    const parts = (r.timestamp||'').split(' ');
+    return parts.length > 1 ? parts[1].slice(0,5) : '';
+  }
+
+  // "HH:MM" (24-hr, from <input type=time>) -> "h:mm AM/PM" for display
+  function fmt12(hhmm){
+    let [h,m] = hhmm.split(':').map(Number);
+    const ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; if (h === 0) h = 12;
+    return h + ':' + String(m).padStart(2,'0') + ' ' + ap;
+  }
+
   function escapeHtml(s){
     return (s||'').replace(/[&<>"\']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
@@ -234,9 +259,18 @@
 
   function render(){
     const filterDate = document.getElementById('dateFilter').value || todayStr();
-    document.getElementById('dateLabel').textContent = fmtDateLabel(filterDate) + ' \u00b7 as of ' + new Date().toLocaleTimeString();
+    const tFrom = document.getElementById('timeFrom').value; // "" or "HH:MM"
+    const tTo = document.getElementById('timeTo').value;
 
-    const dayRows = ALL_ROWS.filter(r => r.date === filterDate);
+    let dateLabel = fmtDateLabel(filterDate);
+    if (tFrom || tTo) {
+      dateLabel += ' \u00b7 ' + (tFrom ? fmt12(tFrom) : 'start of day') + '\u2013' + (tTo ? fmt12(tTo) : 'now');
+    }
+    document.getElementById('dateLabel').textContent = dateLabel + ' \u00b7 as of ' + new Date().toLocaleTimeString();
+
+    let dayRows = ALL_ROWS.filter(r => r.date === filterDate);
+    if (tFrom) dayRows = dayRows.filter(r => rowTime24(r) >= tFrom);
+    if (tTo)   dayRows = dayRows.filter(r => rowTime24(r) <= tTo);
 
     // KPI cards
     const kpiGrid = document.getElementById('kpiGrid');
@@ -324,6 +358,13 @@
 
   document.getElementById('dateFilter').value = todayStr();
   document.getElementById('dateFilter').addEventListener('change', render);
+  document.getElementById('timeFrom').addEventListener('change', render);
+  document.getElementById('timeTo').addEventListener('change', render);
+  document.getElementById('resetTimeBtn').addEventListener('click', ()=>{
+    document.getElementById('timeFrom').value = '';
+    document.getElementById('timeTo').value = '';
+    render();
+  });
   document.getElementById('refreshBtn').addEventListener('click', load);
 
   load();
