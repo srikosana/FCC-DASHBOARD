@@ -46,6 +46,9 @@
   .mode-btn[data-mode="Voicemail"].active{background:var(--dark-green); border-color:var(--dark-green); color:#fff;}
   .mode-btn[data-mode="In-Person"].active{background:var(--teal); border-color:var(--teal); color:#fff;}
   .mode-btn[data-mode="Online Form"].active{background:var(--light-green); border-color:var(--light-green); color:#fff;}
+  .type-btn[data-type="Concern"].active{background:var(--red); border-color:var(--red); color:#fff;}
+  .type-btn[data-type="Inquiry"].active{background:var(--blue); border-color:var(--blue); color:#fff;}
+  .type-btn[data-type="Follow-Up"].active{background:var(--yellow); border-color:var(--yellow); color:var(--dark-grey);}
 
   input[type=text], input[type=search], select, textarea{
     width:100%; font-family:inherit; font-size:1rem; padding:11px 12px;
@@ -112,6 +115,7 @@
 <header>
   <h1>FCC Quick Log</h1>
   <p>Log every call, email, voicemail, walk-in, and form as it comes in.</p>
+  <p style="margin-top:6px;"><a href="my-cases.html" style="color:#fff; opacity:.9; font-size:.8rem;">My Cases &rarr;</a> <a href="dashboard.html" style="color:#fff; opacity:.9; font-size:.8rem; margin-left:12px;">Daily report &rarr;</a></p>
 </header>
 
 <div class="toast" id="toast">Logged &check;</div>
@@ -129,6 +133,16 @@
         <button type="button" class="mode-btn" data-mode="Online Form"><span class="ico">&#128221;</span>Form</button>
       </div>
       <input type="hidden" name="mode" id="modeInput" required>
+    </div>
+
+    <div class="card">
+      <label>Nature of contact <span class="req">*</span></label>
+      <div class="mode-grid" id="typeGrid" style="grid-template-columns:repeat(3,1fr);">
+        <button type="button" class="mode-btn type-btn" data-type="Concern"><span class="ico">&#9888;&#65039;</span>Concern</button>
+        <button type="button" class="mode-btn type-btn" data-type="Inquiry"><span class="ico">&#10067;</span>Inquiry</button>
+        <button type="button" class="mode-btn type-btn" data-type="Follow-Up"><span class="ico">&#128257;</span>Follow-Up</button>
+      </div>
+      <input type="hidden" name="interactionType" id="typeInput" required>
     </div>
 
     <div class="card">
@@ -604,11 +618,21 @@ const CATEGORY_TAXONOMY = {
 
   // Mode buttons
   const modeInput = document.getElementById('modeInput');
-  document.querySelectorAll('.mode-btn').forEach(btn=>{
+  document.querySelectorAll('#modeGrid .mode-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('#modeGrid .mode-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       modeInput.value = btn.dataset.mode;
+    });
+  });
+
+  // Nature-of-contact buttons (Concern / Inquiry / Follow-Up)
+  const typeInput = document.getElementById('typeInput');
+  document.querySelectorAll('#typeGrid .type-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#typeGrid .type-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      typeInput.value = btn.dataset.type;
     });
   });
 
@@ -633,6 +657,11 @@ const CATEGORY_TAXONOMY = {
     if (!modeInput.value) {
       e.preventDefault();
       alert('Pick a mode of contact (phone, email, voicemail, in-person, or form).');
+      return;
+    }
+    if (!typeInput.value) {
+      e.preventDefault();
+      alert('Pick a nature of contact (concern, inquiry, or follow-up).');
       return;
     }
     if (WEB_APP_URL.indexOf('PASTE_YOUR') === 0) {
@@ -667,8 +696,11 @@ const CATEGORY_TAXONOMY = {
     document.getElementById('escalated').checked = false;
     document.getElementById('staff').value = lastStaffValue;
 
-    document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('#modeGrid .mode-btn').forEach(b=>b.classList.remove('active'));
     modeInput.value = '';
+
+    document.querySelectorAll('#typeGrid .type-btn').forEach(b=>b.classList.remove('active'));
+    typeInput.value = '';
 
     document.querySelectorAll('.status-btn').forEach(b=>b.classList.remove('active'));
     document.querySelector('.status-btn[data-status="Open"]').classList.add('active');
