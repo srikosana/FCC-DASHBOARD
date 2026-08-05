@@ -78,6 +78,9 @@
   .pill.open{background:#fbe9ea; color:var(--red);}
   .pill.pending{background:#fdf6dd; color:#8a6d00;}
   .pill.closed{background:#e9f4e3; color:var(--dark-green);}
+  .pill.concern{background:#fbe9ea; color:var(--red);}
+  .pill.inquiry{background:#e9eefa; color:var(--blue);}
+  .pill.followup{background:#fdf6dd; color:#8a6d00;}
 
   .esc-item{border-left:4px solid var(--red); background:#fdf2f2; border-radius:0 8px 8px 0; padding:10px 12px; margin-bottom:8px;}
   .esc-item .top{font-weight:700; font-size:.87rem; display:flex; justify-content:space-between; gap:8px;}
@@ -117,6 +120,7 @@
     <div>
       <h1>FCC Daily Interaction Report</h1>
       <div class="sub" id="dateLabel">Loading...</div>
+      <p style="margin-top:6px;"><a href="entry-form.html" style="color:#fff; opacity:.9; font-size:.8rem;">+ Log new</a> <a href="my-cases.html" style="color:#fff; opacity:.9; font-size:.8rem; margin-left:12px;">My Cases &rarr;</a></p>
     </div>
     <div class="controls">
       <input type="date" id="dateFilter">
@@ -152,6 +156,8 @@
     <div class="card">
       <h2>Resolution Status of Cases</h2>
       <div class="status-pills" id="statusPills"></div>
+      <h2 style="margin-top:18px;">Nature of Contact</h2>
+      <div class="status-pills" id="typePills"></div>
       <h2 style="margin-top:18px;">Trends to Watch <span class="badge" id="trendBadge">repeat campus + category</span></h2>
       <div id="trendList"></div>
     </div>
@@ -165,7 +171,7 @@
     <h2>Full Log <span class="badge" id="logBadge">today</span></h2>
     <div class="log-table">
       <table>
-        <thead><tr><th>Time</th><th>Campus</th><th>Area / Unit</th><th>Mode</th><th>Category</th><th>Subcategory</th><th>Issue</th><th>Notes</th><th>Status</th></tr></thead>
+        <thead><tr><th>Time</th><th>Campus</th><th>Area / Unit</th><th>Mode</th><th>Type</th><th>Category</th><th>Subcategory</th><th>Issue</th><th>Notes</th><th>Status</th></tr></thead>
         <tbody id="logBody"></tbody>
       </table>
     </div>
@@ -243,7 +249,8 @@
             category:r[8]||'', subcategory:r[9]||'', issue:r[10]||'', notes:r[11]||'',
             status:r[12]||'Open', priority:r[13]||'',
             escalated:(r[14]||'').trim().toLowerCase()==='yes', footprints:r[15]||'',
-            edOfInstruction:r[16]||'', edOfSupport:r[17]||'', areaCTM:r[18]||''
+            edOfInstruction:r[16]||'', edOfSupport:r[17]||'', areaCTM:r[18]||'',
+            interactionType:r[19]||''
           });
         }
         document.getElementById('statusLine').textContent =
@@ -312,6 +319,15 @@
       <div class="pill closed"><div class="n">${statusCounts['Closed']||0}</div><div class="l">Closed</div></div>
     `;
 
+    // Nature of contact
+    const typeCounts = {Concern:0, Inquiry:0, 'Follow-Up':0};
+    dayRows.forEach(r=>{ if (typeCounts[r.interactionType]===undefined) typeCounts[r.interactionType]=0; typeCounts[r.interactionType]++; });
+    document.getElementById('typePills').innerHTML = `
+      <div class="pill concern"><div class="n">${typeCounts['Concern']||0}</div><div class="l">Concern</div></div>
+      <div class="pill inquiry"><div class="n">${typeCounts['Inquiry']||0}</div><div class="l">Inquiry</div></div>
+      <div class="pill followup"><div class="n">${typeCounts['Follow-Up']||0}</div><div class="l">Follow-Up</div></div>
+    `;
+
     // Escalations
     const escRows = dayRows.filter(r=>r.escalated || r.priority==='Urgent');
     document.getElementById('escBadge').textContent = escRows.length;
@@ -348,12 +364,13 @@
         <td>${escapeHtml(r.campus)}</td>
         <td>${escapeHtml(r.area)}${r.unit ? '<br><span class="subtle">'+escapeHtml(r.unit)+'</span>' : ''}</td>
         <td>${escapeHtml(r.mode)}</td>
+        <td>${escapeHtml(r.interactionType)}</td>
         <td>${escapeHtml(r.category)}</td>
         <td>${escapeHtml(r.subcategory)}</td>
         <td>${escapeHtml(r.issue)}</td>
         <td>${escapeHtml(r.notes)}</td>
         <td><span class="tag ${r.status.replace(/ /g,'-')}" data-s="${escapeHtml(r.status)}">${escapeHtml(r.status)}</span></td>
-      </tr>`).join('') : `<tr><td colspan="9" class="empty">Nothing logged yet for this date.</td></tr>`;
+      </tr>`).join('') : `<tr><td colspan="10" class="empty">Nothing logged yet for this date.</td></tr>`;
   }
 
   document.getElementById('dateFilter').value = todayStr();
