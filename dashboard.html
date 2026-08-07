@@ -25,14 +25,13 @@
   header h1{margin:0; font-size:1.5rem; font-weight:800; letter-spacing:.2px;}
   header .sub{font-size:.85rem; opacity:.9; margin-top:4px;}
   .controls{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
-  .controls button, .controls input[type=date], .controls input[type=time]{
+  .controls button, .controls input[type=datetime-local]{
     font-family:inherit; border-radius:8px; border:1px solid rgba(255,255,255,.5);
-    background:rgba(255,255,255,.15); color:#fff; padding:8px 14px; font-size:.85rem; font-weight:600; cursor:pointer;
+    background:rgba(255,255,255,.15); color:#fff; padding:8px 12px; font-size:.82rem; font-weight:600; cursor:pointer;
   }
-  .controls input[type=date], .controls input[type=time]{cursor:default; color-scheme:dark;}
+  .controls input[type=datetime-local]{cursor:default; color-scheme:dark;}
   .controls button:hover{background:rgba(255,255,255,.28);}
-  .time-range{display:flex; align-items:center; gap:6px;}
-  .time-range input[type=time]{padding:8px 10px;}
+  .range-picker{display:flex; align-items:center; gap:6px;}
   .to-sep{color:#fff; font-size:.8rem; opacity:.85;}
 
   main{max-width:1180px; margin:0 auto; padding:22px 20px 60px;}
@@ -123,13 +122,12 @@
       <p style="margin-top:6px;"><a href="entry-form.html" style="color:#fff; opacity:.9; font-size:.8rem;">+ Log new</a> <a href="my-cases.html" style="color:#fff; opacity:.9; font-size:.8rem; margin-left:12px;">My Cases &rarr;</a></p>
     </div>
     <div class="controls">
-      <input type="date" id="dateFilter">
-      <span class="time-range">
-        <input type="time" id="timeFrom" aria-label="From time">
+      <span class="range-picker">
+        <input type="datetime-local" id="rangeFrom" aria-label="From">
         <span class="to-sep">to</span>
-        <input type="time" id="timeTo" aria-label="To time">
+        <input type="datetime-local" id="rangeTo" aria-label="To">
       </span>
-      <button id="resetTimeBtn" title="Clear the time range and show the full day">All day</button>
+      <button id="resetTodayBtn" title="Reset to today, midnight to midnight">Today</button>
       <button id="refreshBtn">&#8635; Refresh</button>
       <button onclick="window.print()">&#128424; Print / Save PDF</button>
     </div>
@@ -143,7 +141,7 @@
 
   <div class="grid3">
     <div class="card">
-      <h2>Topics / Categories of Support <span class="badge" id="catBadge">today</span></h2>
+      <h2>Topics / Categories of Support <span class="badge" id="catBadge">selected range</span></h2>
       <table id="catTable"><thead><tr><th>Category</th><th style="width:45%">Volume</th><th>Count</th></tr></thead><tbody></tbody></table>
     </div>
     <div class="card">
@@ -168,7 +166,7 @@
   </div>
 
   <div class="card">
-    <h2>Full Log <span class="badge" id="logBadge">today</span></h2>
+    <h2>Full Log <span class="badge" id="logBadge">selected range</span></h2>
     <div class="log-table">
       <table>
         <thead><tr><th>Time</th><th>Campus</th><th>Area / Unit</th><th>Mode</th><th>Type</th><th>Category</th><th>Subcategory</th><th>Issue</th><th>Notes</th><th>Status</th></tr></thead>
@@ -190,31 +188,27 @@
 
   let ALL_ROWS = []; // array of row objects
 
-  function todayStr(){
-    const d = new Date();
-    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  function pad(n){ return String(n).padStart(2,'0'); }
+
+  // Date -> "YYYY-MM-DDTHH:MM", the value format <input type=datetime-local> needs
+  function toLocalInputValue(date){
+    return date.getFullYear()+'-'+pad(date.getMonth()+1)+'-'+pad(date.getDate())+'T'+pad(date.getHours())+':'+pad(date.getMinutes());
   }
 
-  function fmtDateLabel(dstr){
-    const [y,m,d] = dstr.split('-').map(Number);
-    const dt = new Date(y, m-1, d);
-    return dt.toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric', year:'numeric'});
+  function startOfToday(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
+  function endOfToday(){ const d = new Date(); d.setHours(23,59,0,0); return d; }
+
+  // Parses the Timestamp column ("yyyy-MM-dd HH:mm:ss") as a local Date,
+  // so it compares directly against the datetime-local inputs' values.
+  function parseRowTimestamp(r){
+    if (!r.timestamp) return null;
+    const d = new Date(r.timestamp.replace(' ', 'T'));
+    return isNaN(d.getTime()) ? null : d;
   }
 
-  // Pulls "HH:MM" (24-hr) out of the Timestamp column ("yyyy-MM-dd HH:mm:ss"),
-  // rather than the display Time column ("7:52 AM") which doesn't sort correctly
-  // as plain text.
-  function rowTime24(r){
-    const parts = (r.timestamp||'').split(' ');
-    return parts.length > 1 ? parts[1].slice(0,5) : '';
-  }
-
-  // "HH:MM" (24-hr, from <input type=time>) -> "h:mm AM/PM" for display
-  function fmt12(hhmm){
-    let [h,m] = hhmm.split(':').map(Number);
-    const ap = h >= 12 ? 'PM' : 'AM';
-    h = h % 12; if (h === 0) h = 12;
-    return h + ':' + String(m).padStart(2,'0') + ' ' + ap;
+  function fmtRangeLabel(fromDate, toDate){
+    const opts = {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'};
+    return fromDate.toLocaleString(undefined, opts) + ' \u2192 ' + toDate.toLocaleString(undefined, opts);
   }
 
   function escapeHtml(s){
@@ -265,19 +259,18 @@
   }
 
   function render(){
-    const filterDate = document.getElementById('dateFilter').value || todayStr();
-    const tFrom = document.getElementById('timeFrom').value; // "" or "HH:MM"
-    const tTo = document.getElementById('timeTo').value;
+    const fromVal = document.getElementById('rangeFrom').value;
+    const toVal = document.getElementById('rangeTo').value;
+    const fromDate = fromVal ? new Date(fromVal) : startOfToday();
+    const toDate = toVal ? new Date(toVal) : endOfToday();
 
-    let dateLabel = fmtDateLabel(filterDate);
-    if (tFrom || tTo) {
-      dateLabel += ' \u00b7 ' + (tFrom ? fmt12(tFrom) : 'start of day') + '\u2013' + (tTo ? fmt12(tTo) : 'now');
-    }
-    document.getElementById('dateLabel').textContent = dateLabel + ' \u00b7 as of ' + new Date().toLocaleTimeString();
+    document.getElementById('dateLabel').textContent =
+      fmtRangeLabel(fromDate, toDate) + ' \u00b7 as of ' + new Date().toLocaleTimeString();
 
-    let dayRows = ALL_ROWS.filter(r => r.date === filterDate);
-    if (tFrom) dayRows = dayRows.filter(r => rowTime24(r) >= tFrom);
-    if (tTo)   dayRows = dayRows.filter(r => rowTime24(r) <= tTo);
+    let dayRows = ALL_ROWS.filter(r => {
+      const ts = parseRowTimestamp(r);
+      return ts && ts >= fromDate && ts <= toDate;
+    });
 
     // KPI cards
     const kpiGrid = document.getElementById('kpiGrid');
@@ -297,7 +290,7 @@
     catBody.innerHTML = catEntries.length ? catEntries.map(([cat,n])=>`
       <tr><td>${escapeHtml(cat)}</td>
       <td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:${(n/maxCat*100).toFixed(0)}%"></div></div></div></td>
-      <td class="count">${n}</td></tr>`).join('') : `<tr><td colspan="3" class="empty">No interactions logged yet for this date.</td></tr>`;
+      <td class="count">${n}</td></tr>`).join('') : `<tr><td colspan="3" class="empty">No interactions logged in this range.</td></tr>`;
 
     // Area breakdown (26-27 assignment structure)
     const areaCounts = {};
@@ -308,7 +301,7 @@
     areaBody.innerHTML = areaEntries.length ? areaEntries.map(([area,n])=>`
       <tr><td>${escapeHtml(area)}</td>
       <td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill alt" style="width:${(n/maxArea*100).toFixed(0)}%"></div></div></div></td>
-      <td class="count">${n}</td></tr>`).join('') : `<tr><td colspan="3" class="empty">No interactions logged yet for this date.</td></tr>`;
+      <td class="count">${n}</td></tr>`).join('') : `<tr><td colspan="3" class="empty">No interactions logged in this range.</td></tr>`;
 
     // Status pills
     const statusCounts = {Open:0, 'Pending Follow-Up':0, Closed:0};
@@ -370,16 +363,16 @@
         <td>${escapeHtml(r.issue)}</td>
         <td>${escapeHtml(r.notes)}</td>
         <td><span class="tag ${r.status.replace(/ /g,'-')}" data-s="${escapeHtml(r.status)}">${escapeHtml(r.status)}</span></td>
-      </tr>`).join('') : `<tr><td colspan="10" class="empty">Nothing logged yet for this date.</td></tr>`;
+      </tr>`).join('') : `<tr><td colspan="10" class="empty">Nothing logged in this range.</td></tr>`;
   }
 
-  document.getElementById('dateFilter').value = todayStr();
-  document.getElementById('dateFilter').addEventListener('change', render);
-  document.getElementById('timeFrom').addEventListener('change', render);
-  document.getElementById('timeTo').addEventListener('change', render);
-  document.getElementById('resetTimeBtn').addEventListener('click', ()=>{
-    document.getElementById('timeFrom').value = '';
-    document.getElementById('timeTo').value = '';
+  document.getElementById('rangeFrom').value = toLocalInputValue(startOfToday());
+  document.getElementById('rangeTo').value = toLocalInputValue(endOfToday());
+  document.getElementById('rangeFrom').addEventListener('change', render);
+  document.getElementById('rangeTo').addEventListener('change', render);
+  document.getElementById('resetTodayBtn').addEventListener('click', ()=>{
+    document.getElementById('rangeFrom').value = toLocalInputValue(startOfToday());
+    document.getElementById('rangeTo').value = toLocalInputValue(endOfToday());
     render();
   });
   document.getElementById('refreshBtn').addEventListener('click', load);
